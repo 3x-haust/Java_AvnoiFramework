@@ -1,0 +1,76 @@
+import com.vanniktech.maven.publish.SonatypeHost
+
+plugins {
+    id 'java'
+    id "com.vanniktech.maven.publish" version "0.29.0"
+    id 'signing'
+}
+
+group = 'io.github._3xhaust'
+version = '0.1.0'
+
+repositories {
+    mavenCentral()
+}
+
+tasks.withType(Javadoc) {
+    options {
+        encoding 'UTF-8'
+    }
+}
+
+signing {
+    sign publishing.publications
+}
+
+mavenPublishing {
+    signAllPublications()
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+
+    coordinates("io.github.3x-haust", "avnoi-framework", version)
+
+    pom {
+        name = "Avnoi Framework"
+        description = "Java framework inspired by Nestjs"
+        inceptionYear = "2024"
+        url = "https://github.com/3x-haust/Java_AvnoiFramework"
+        licenses {
+            license {
+                name = "MIT License"
+                url = "https://github.com/3x-haust/Java_AvnoiFramework/blob/main/LICENSE"
+                distribution = "https://github.com/3x-haust/Java_AvnoiFramework/blob/main/LICENSE"
+            }
+        }
+        developers {
+            developer {
+                id = "3xhaust"
+                name = "3xhaust"
+                url = "https://github.com/3x-haust/"
+            }
+        }
+        scm {
+            url = "https://github.com/3x-haust/Java_AvnoiFramework"
+            connection = "scm:git:git://github.com/3x-haust/Java_AvnoiFramework.git"
+            developerConnection = "scm:git:ssh://git@github.com/3x-haust/Java_AvnoiFramework.git"
+        }
+    }
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+
+    compileOnly 'org.projectlombok:lombok:1.18.34'
+    annotationProcessor 'org.projectlombok:lombok:1.18.34'
+
+    testCompileOnly 'org.projectlombok:lombok:1.18.34'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
+
+    implementation 'org.reflections:reflections:0.9.11'
+
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.0.1'
+}
+
+test {
+    useJUnitPlatform()
+}
