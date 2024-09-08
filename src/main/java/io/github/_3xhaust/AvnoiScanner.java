@@ -65,23 +65,20 @@ public class AvnoiScanner {
         }
     }
 
-    private static Object createInstance(Class<?> clazz, Map<Class<?>, Object> applicationContext) throws InvocationTargetException, InstantiationException, IllegalAccessException, NoSuchMethodException {
-        Constructor<?>[] constructors = clazz.getConstructors();
-
-        for (Constructor<?> constructor : constructors) {
-            if (constructor.isAnnotationPresent(io.github._3xhaust.annotations.Inject.class) || constructor.getParameterCount() > 0) {
+    private static Object createInstance(Class<?> clazz, Map<Class<?>, Object> applicationContext)
+            throws InvocationTargetException, InstantiationException, IllegalAccessException, NoSuchMethodException
+    {
+        for (Constructor<?> constructor : clazz.getDeclaredConstructors()) {
+            if (constructor.isAnnotationPresent(io.github._3xhaust.annotations.Inject.class)) {
                 Class<?>[] parameterTypes = constructor.getParameterTypes();
-
-                Object[] parameters = Arrays.stream(parameterTypes)
-                        .map(paramType -> {
-                            Object dependency = applicationContext.get(paramType);
-                            if (dependency == null) {
-                                throw new RuntimeException("No dependency found for " + paramType.getName());
-                            }
-                            return dependency;
-                        })
-                        .toArray();
-
+                Object[] parameters = new Object[parameterTypes.length];
+                for (int i = 0; i < parameterTypes.length; i++) {
+                    parameters[i] = applicationContext.get(parameterTypes[i]);
+                    if (parameters[i] == null) {
+                        throw new RuntimeException("Dependency not found for " + parameterTypes[i].getName() +
+                                ". Ensure all required dependencies are properly configured.");
+                    }
+                }
                 return constructor.newInstance(parameters);
             }
         }

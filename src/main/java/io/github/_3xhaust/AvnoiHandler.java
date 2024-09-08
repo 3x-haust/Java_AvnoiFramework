@@ -8,24 +8,31 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public class AvnoiHandler implements HttpHandler {
+    private final Router router;
+    private final ControllerDispatcher dispatcher;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final Map<Class<?>, Object> applicationContext;
+
     private static final String ANSI_RESET = "\u001B[0m";
     private static final String ANSI_BOLD = "\u001B[1m";
     private static final String ANSI_GREEN = "\u001B[32m";
     private static final String ANSI_YELLOW = "\u001B[33m";
     private static final String ANSI_RED = "\u001B[31m";
     private static final String ANSI_CYAN = "\u001B[36m";
+    private static final String ANSI_WHITE = "\u001B[37m";
+    private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
-    private final Router router;
-    private final ControllerDispatcher dispatcher;
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
-    public AvnoiHandler(Router router, ControllerDispatcher dispatcher) {
+    public AvnoiHandler(Router router, ControllerDispatcher dispatcher, Map<Class<?>, Object> applicationContext) {
         this.router = router;
         this.dispatcher = dispatcher;
+        this.applicationContext = applicationContext;
     }
 
     @Override
@@ -45,7 +52,7 @@ public class AvnoiHandler implements HttpHandler {
                     sendResponse(exchange, statusCode, responseBody);
                 } else {
                     statusCode = 404;
-                    sendResponse(exchange, statusCode, "Not Found");
+                    sendResponse(exchange, statusCode, "The requested page could not be found. Please check the URL and try again.");
                 }
 
                 long endTime = System.currentTimeMillis();
@@ -59,24 +66,33 @@ public class AvnoiHandler implements HttpHandler {
                         ANSI_BOLD + statusColor, statusCode, ANSI_RESET,
                         processingTime);
             } catch (Exception e) {
-                e.printStackTrace();
-                try {
-                    int statusCode = 500;
-                    sendResponse(exchange, statusCode, "Internal Server Error");
-
-                    long endTime = System.currentTimeMillis();
-                    long processingTime = endTime - startTime;
-                    System.out.printf("[%s] %s %s %s%d%s in %dms\n",
-                            ANSI_CYAN + today() + ANSI_RESET,
-                            method,
-                            path,
-                            ANSI_BOLD + ANSI_RED, statusCode, ANSI_RESET,
-                            processingTime);
-                } catch (IOException ex) {
-                    throw new RuntimeException(ex);
-                }
+                handleException(exchange, e, method, path, startTime);
             }
         });
+    }
+
+    private void handleException(HttpExchange exchange, Exception e, String method, String path, long startTime) {
+        try {
+            int statusCode = 500;
+            String errorMessage = "An internal server error occurred. Please try again later.";
+            if (e instanceof IllegalArgumentException) {
+                statusCode = 400;
+                errorMessage = "Invalid request: " + e.getMessage();
+            }
+            sendResponse(exchange, statusCode, errorMessage);
+
+            long endTime = System.currentTimeMillis();
+            long processingTime = endTime - startTime;
+            System.out.printf("[%s] %s %s %s%d%s in %dms - Error: %s\n",
+                    ANSI_CYAN + LocalDateTime.now().format(dateTimeFormatter) + ANSI_RESET,
+                    method,
+                    path,
+                    ANSI_BOLD + ANSI_RED, statusCode, ANSI_RESET,
+                    processingTime,
+                    e.getMessage());
+        } catch (IOException ex) {
+            System.err.println("Failed to send error response: " + ex.getMessage());
+        }
     }
 
     private String today() {

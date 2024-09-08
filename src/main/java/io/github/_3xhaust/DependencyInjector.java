@@ -20,7 +20,9 @@ public class DependencyInjector {
                     if (dependency != null) {
                         field.set(instance, dependency);
                     } else {
-                        System.err.println("Dependency not found for: " + fieldType.getName());
+                        throw new IllegalArgumentException("Dependency not found for field: " + field.getName() +
+                                " in class " + instance.getClass().getSimpleName() +
+                                ". Ensure all required dependencies are properly configured.");
                     }
                 }
             }

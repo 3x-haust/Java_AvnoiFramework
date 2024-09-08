@@ -44,7 +44,7 @@ public class Avnoi {
         ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(10);
         try {
             HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
-            server.createContext("/", new AvnoiHandler(router, dispatcher));
+            server.createContext("/", new AvnoiHandler(router, dispatcher, applicationContext));
             server.setExecutor(threadPoolExecutor);
             server.start();
 
@@ -53,7 +53,9 @@ public class Avnoi {
             System.out.println();
 
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("An issue occurred while starting the server: " + e.getMessage());
+            System.err.println("Please check if port " + port + " is already in use.");
+            System.err.println("To use a different port, call Avnoi.listen(portNumber).");
         }
     }
 
@@ -64,6 +66,7 @@ public class Avnoi {
     private static void scanAndInitialize(Class<?> mainClass, Class<?>... modules) throws InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
         AvnoiScanner.scanAndInitialize(mainClass, applicationContext, modules);
         mapControllers(mainClass);
+        DependencyInjector.injectDependencies(applicationContext);
     }
 
     private static void mapControllers(Class<?> mainClass) {

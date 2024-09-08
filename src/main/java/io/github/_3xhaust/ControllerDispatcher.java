@@ -9,22 +9,19 @@ import java.io.*;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 public class ControllerDispatcher {
-    private final Map<Class<?>, Object> controllers;
+    private final Map<Class<?>, Object> applicationContext; // controllers 필드 제거
 
-    public ControllerDispatcher(Map<Class<?>, Object> controllers) {
-        this.controllers = controllers;
+    public ControllerDispatcher(Map<Class<?>, Object> applicationContext) {
+        this.applicationContext = applicationContext;
     }
 
     public Object dispatch(Method method, HttpExchange exchange) throws Exception {
-        Object controllerInstance = controllers.get(method.getDeclaringClass());
+        Object controllerInstance = applicationContext.get(method.getDeclaringClass());
         Object[] parameters = getMethodParameters(method, exchange);
-
-        System.out.println(Arrays.toString(parameters));
 
         return method.invoke(controllerInstance, parameters);
     }
@@ -57,12 +54,16 @@ public class ControllerDispatcher {
         }
 
         Class<?> parameterType = parameter.getType();
-        if (parameterType == int.class || parameterType == Integer.class) {
-            return Integer.parseInt(paramValue);
-        } else if (parameterType == String.class) {
-            return paramValue;
-        } else {
-            throw new IllegalArgumentException("Unsupported parameter type: " + parameterType);
+        try {
+            if (parameterType == int.class || parameterType == Integer.class) {
+                return Integer.parseInt(paramValue);
+            } else if (parameterType == String.class) {
+                return paramValue;
+            } else {
+                throw new IllegalArgumentException("Unsupported parameter type: " + parameterType);
+            }
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid value for parameter '" + paramName + "'. Expected a number, but got: " + paramValue);
         }
     }
 
