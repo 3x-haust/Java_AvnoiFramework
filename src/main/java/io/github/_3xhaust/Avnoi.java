@@ -16,10 +16,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 
 public class Avnoi {
+    private static final String ANSI_RESET = "\u001B[0m";
+    private static final String ANSI_BOLD = "\u001B[1m";
+    private static final String ANSI_PURPLE = "\u001B[35m";
+
     private static final Router router = new Router();
     private final ControllerDispatcher dispatcher;
     private static final Map<Class<?>, Object> applicationContext = new HashMap<>();
     private static int port = 8080;
+    private static final String version = "0.1.0";
 
     public Avnoi(Class<?> mainClass, Class<?>... modules) throws InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
         scanAndInitialize(mainClass, modules);
@@ -42,7 +47,11 @@ public class Avnoi {
             server.createContext("/", new AvnoiHandler(router, dispatcher));
             server.setExecutor(threadPoolExecutor);
             server.start();
-            System.out.println("Avnoi server started on port " + port);
+
+            System.out.println("\n" + ANSI_BOLD + ANSI_PURPLE + "▲ Avnoi " + version + ANSI_RESET);
+            System.out.println("- Local:              http://localhost:" + port);
+            System.out.println();
+
         } catch (IOException e) {
             e.printStackTrace();
         }

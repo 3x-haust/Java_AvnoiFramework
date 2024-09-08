@@ -2,7 +2,9 @@ package io.github._3xhaust.exmaple.post;
 
 import io.github._3xhaust.annotations.Controller;
 import io.github._3xhaust.annotations.Inject;
+import io.github._3xhaust.annotations.types.Body;
 import io.github._3xhaust.annotations.types.Get;
+import io.github._3xhaust.exmaple.post.dto.CreatePostDto;
 import io.github._3xhaust.exmaple.post.entities.Post;
 
 @Controller("/api/posts")
@@ -14,8 +16,8 @@ public class PostController {
         this.postService = postService;
     }
 
-    @Get("test")
-    public Post test() {
-        return postService.test();
+    @io.github._3xhaust.annotations.types.Post("test")
+    public Post test(@Body CreatePostDto post) {
+        return postService.test(post);
     }
 }

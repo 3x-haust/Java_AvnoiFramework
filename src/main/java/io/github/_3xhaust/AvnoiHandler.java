@@ -12,6 +12,13 @@ import java.util.Date;
 import java.util.concurrent.CompletableFuture;
 
 public class AvnoiHandler implements HttpHandler {
+    private static final String ANSI_RESET = "\u001B[0m";
+    private static final String ANSI_BOLD = "\u001B[1m";
+    private static final String ANSI_GREEN = "\u001B[32m";
+    private static final String ANSI_YELLOW = "\u001B[33m";
+    private static final String ANSI_RED = "\u001B[31m";
+    private static final String ANSI_CYAN = "\u001B[36m";
+
     private final Router router;
     private final ControllerDispatcher dispatcher;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -23,35 +30,60 @@ public class AvnoiHandler implements HttpHandler {
 
     @Override
     public void handle(HttpExchange exchange) {
+        long startTime = System.currentTimeMillis();
+        String method = exchange.getRequestMethod();
+        String path = exchange.getRequestURI().getPath();
         CompletableFuture.runAsync(() -> {
             try {
-                String method = exchange.getRequestMethod();
-                String path = exchange.getRequestURI().getPath();
-
-                Date today = new Date();
-                String pattern = "MM/dd/yyyy, HH:mm:ss a";
-                SimpleDateFormat df = new SimpleDateFormat(pattern);
-
-                System.out.printf("[%s] %s %s\n", df.format(today), method, path);
+                int statusCode = 200;
 
                 Method handler = router.findHandler(HttpMethod.valueOf(method), path);
 
                 if (handler != null) {
                     Object result = dispatcher.dispatch(handler, exchange);
                     String responseBody = objectMapper.writeValueAsString(result);
-                    sendResponse(exchange, 200, responseBody);
+                    sendResponse(exchange, statusCode, responseBody);
                 } else {
-                    sendResponse(exchange, 404, "Not Found");
+                    statusCode = 404;
+                    sendResponse(exchange, statusCode, "Not Found");
                 }
+
+                long endTime = System.currentTimeMillis();
+                long processingTime = endTime - startTime;
+                String statusColor = statusCode == 200 ? ANSI_GREEN : ANSI_YELLOW;
+
+                System.out.printf("[%s] %s %s %s%d%s in %dms\n",
+                        ANSI_CYAN + today() + ANSI_RESET,
+                        method,
+                        path,
+                        ANSI_BOLD + statusColor, statusCode, ANSI_RESET,
+                        processingTime);
             } catch (Exception e) {
                 e.printStackTrace();
                 try {
-                    sendResponse(exchange, 500, "Internal Server Error");
+                    int statusCode = 500;
+                    sendResponse(exchange, statusCode, "Internal Server Error");
+
+                    long endTime = System.currentTimeMillis();
+                    long processingTime = endTime - startTime;
+                    System.out.printf("[%s] %s %s %s%d%s in %dms\n",
+                            ANSI_CYAN + today() + ANSI_RESET,
+                            method,
+                            path,
+                            ANSI_BOLD + ANSI_RED, statusCode, ANSI_RESET,
+                            processingTime);
                 } catch (IOException ex) {
                     throw new RuntimeException(ex);
                 }
             }
         });
+    }
+
+    private String today() {
+        Date today = new Date();
+        String pattern = "MM/dd/yyyy, HH:mm:ss a";
+        SimpleDateFormat df = new SimpleDateFormat(pattern);
+        return df.format(today);
     }
 
     private void sendResponse(HttpExchange exchange, int statusCode, String responseBody) throws IOException {
