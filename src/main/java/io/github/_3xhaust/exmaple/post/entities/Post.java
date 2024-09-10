@@ -1,19 +1,21 @@
 package io.github._3xhaust.exmaple.post.entities;
 
+import io.github._3xhaust.annotations.Entity;
+import io.github._3xhaust.annotations.orm.Column;
+import io.github._3xhaust.annotations.orm.PrimaryGeneratedColumn;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
+@Entity
 public class Post {
-    private final int id;
-    private final String title;
-    private final String content;
+    @PrimaryGeneratedColumn(strategy = "increment")
+    private Long id;
 
-    public Post(int id, String title, String content) {
-        this.id = id;
-        this.title = title;
-        this.content = content;
-    }
+    @Column(unique = true)
+    private String title;
 
+    @Column()
+    private String content;
 }

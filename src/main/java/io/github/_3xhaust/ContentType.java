@@ -1,5 +1,8 @@
 package io.github._3xhaust;
 
+import lombok.Getter;
+
+@Getter
 public enum ContentType {
     FORM_DATA("multipart/form-data"),
     URL_ENCODED("application/x-www-form-urlencoded"),
@@ -12,10 +15,6 @@ public enum ContentType {
 
     ContentType(String value) {
         this.value = value;
-    }
-
-    public String getValue() {
-        return value;
     }
 
     public static ContentType fromString(String value) {

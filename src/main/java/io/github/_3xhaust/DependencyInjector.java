@@ -1,14 +1,12 @@
 package io.github._3xhaust;
 
-import io.github._3xhaust.annotations.Inject;
-
 import java.util.Map;
 
 public class DependencyInjector {
     public static void injectDependencies(Map<Class<?>, Object> applicationContext) throws IllegalAccessException {
         for (Object instance : applicationContext.values()) {
             for (java.lang.reflect.Field field : instance.getClass().getDeclaredFields()) {
-                if (field.isAnnotationPresent(Inject.class)) {
+                if (field.isAnnotationPresent(io.github._3xhaust.annotations.Inject.class)) {
                     field.setAccessible(true);
                     Class<?> fieldType = field.getType();
 
@@ -22,7 +20,7 @@ public class DependencyInjector {
                     } else {
                         throw new IllegalArgumentException("Dependency not found for field: " + field.getName() +
                                 " in class " + instance.getClass().getSimpleName() +
-                                ". Ensure all required dependencies are properly configured.");
+                                ". Required type: " + fieldType.getName() + ". Ensure all required dependencies are properly configured.");
                     }
                 }
             }

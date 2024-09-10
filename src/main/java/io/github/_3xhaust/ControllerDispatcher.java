@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ControllerDispatcher {
-    private final Map<Class<?>, Object> applicationContext; // controllers 필드 제거
+    private final Map<Class<?>, Object> applicationContext;
 
     public ControllerDispatcher(Map<Class<?>, Object> applicationContext) {
         this.applicationContext = applicationContext;
@@ -21,8 +21,10 @@ public class ControllerDispatcher {
 
     public Object dispatch(Method method, HttpExchange exchange) throws Exception {
         Object controllerInstance = applicationContext.get(method.getDeclaringClass());
+        if (controllerInstance == null) {
+            throw new IllegalStateException("Controller instance not found in applicationContext: " + method.getDeclaringClass().getName());
+        }
         Object[] parameters = getMethodParameters(method, exchange);
-
         return method.invoke(controllerInstance, parameters);
     }
 
@@ -53,18 +55,7 @@ public class ControllerDispatcher {
             return null;
         }
 
-        Class<?> parameterType = parameter.getType();
-        try {
-            if (parameterType == int.class || parameterType == Integer.class) {
-                return Integer.parseInt(paramValue);
-            } else if (parameterType == String.class) {
-                return paramValue;
-            } else {
-                throw new IllegalArgumentException("Unsupported parameter type: " + parameterType);
-            }
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid value for parameter '" + paramName + "'. Expected a number, but got: " + paramValue);
-        }
+        return convertStringToType(paramValue, parameter.getType());
     }
 
     private Object getRequestBody(HttpExchange exchange, Parameter parameter) throws IOException {
@@ -86,9 +77,8 @@ public class ControllerDispatcher {
                 yield mapToDto(formData, dtoClass);
             }
             case URL_ENCODED -> parseUrlEncodedData(exchange, parameter);
-            case RAW -> readRawBody(exchange);
+            case RAW, GRAPHQL -> readRawBody(exchange);
             case BINARY -> readBinaryBody(exchange);
-            case GRAPHQL -> readRawBody(exchange);
             default -> throw new IllegalArgumentException("Unsupported Content-Type: " + contentType);
         };
     }
@@ -142,6 +132,7 @@ public class ControllerDispatcher {
                     if (fileName != null) {
                         isFilePart = true;
                         fileContent = new ByteArrayOutputStream();
+                        // 파일 이름을 저장하도록 수정
                         formData.put(fieldName, fileName);
                     }
                 } else if (line.isEmpty() && isFilePart) continue;
@@ -163,7 +154,7 @@ public class ControllerDispatcher {
 
     private Object parseUrlEncodedData(HttpExchange exchange, Parameter parameter) throws IOException {
         String requestBody = readRawBody(exchange);
-        Map<String, Object> urlEncodedData = new HashMap<>(); // Map<String, String>에서 변경
+        Map<String, Object> urlEncodedData = new HashMap<>();
         String[] pairs = requestBody.split("&");
         for (String pair : pairs) {
             String[] parts = pair.split("=");
