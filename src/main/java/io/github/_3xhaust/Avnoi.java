@@ -1,20 +1,19 @@
 package io.github._3xhaust;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.util.DefaultIndenter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import io.github._3xhaust.annotations.Controller;
-import io.github._3xhaust.annotations.Entity;
 import io.github._3xhaust.annotations.Module;
 import io.github._3xhaust.annotations.Service;
-import io.github._3xhaust.orm.*;
-import org.reflections.Reflections;
+import io.github._3xhaust.orm.AvnoiOrmModule;
+import io.github._3xhaust.orm.DataSourceOptions;
+import io.github._3xhaust.orm.RepositoryFactory;
+import io.github._3xhaust.orm.RepositoryFactoryImpl;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -24,7 +23,9 @@ import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -236,7 +237,6 @@ public class Avnoi {
                             ANSI_BOLD + statusColor, statusCode, ANSI_RESET,
                             processingTime);
                 } catch (Exception e) {
-                    e.printStackTrace();
                     handleException(exchange, e, method, path, startTime);
                 }
             });
@@ -245,22 +245,41 @@ public class Avnoi {
         private void handleException(HttpExchange exchange, Exception e, String method, String path, long startTime) {
             try {
                 int statusCode = 500;
-                String errorMessage = "An internal server error occurred. Please try again later.";
+                String responseBody;
+
+                if (e instanceof InvocationTargetException invocationTargetException) {
+                    e = (Exception) invocationTargetException.getTargetException();
+                }
+
                 if (e instanceof IllegalArgumentException) {
                     statusCode = 400;
-                    errorMessage = "Invalid request: " + e.getMessage();
+                    responseBody = objectMapper.writeValueAsString(Map.of(
+                            "status", statusCode,
+                            "timestamp", new Date().toString(),
+                            "message", "Invalid request: " + e.getMessage()
+                    ));
+                } else if (e instanceof HttpException httpException) {
+                    statusCode = httpException.getStatus().getCode();
+                    responseBody = objectMapper.writeValueAsString(httpException.getDetails());
+                } else {
+                    e.printStackTrace();
+                    responseBody = objectMapper.writeValueAsString(Map.of(
+                            "status", statusCode,
+                            "timestamp", new Date().toString(),
+                            "message", "An internal server error occurred. Please try again later."
+                    ));
                 }
-                sendResponse(exchange, statusCode, errorMessage);
+
+                sendResponse(exchange, statusCode, responseBody);
 
                 long endTime = System.currentTimeMillis();
                 long processingTime = endTime - startTime;
-                System.out.printf("[%s] %s %s %s%d%s in %dms - Error: %s\n",
+                System.out.printf("[%s] %s %s %s%d%s in %dms\n",
                         ANSI_CYAN + LocalDateTime.now().format(dateTimeFormatter) + ANSI_RESET,
                         method,
                         path,
                         ANSI_BOLD + ANSI_RED, statusCode, ANSI_RESET,
-                        processingTime,
-                        e.getMessage());
+                        processingTime);
             } catch (IOException ex) {
                 System.err.println("Failed to send error response: " + ex.getMessage());
             }

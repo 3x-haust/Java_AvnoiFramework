@@ -9,6 +9,7 @@ import io.github._3xhaust.exmaple.post.dto.CreatePostDto;
 import io.github._3xhaust.exmaple.post.entities.Post;
 
 import java.util.List;
+import java.util.Map;
 
 @Controller("/api/posts")
 public class PostController {
@@ -20,7 +21,7 @@ public class PostController {
     }
 
     @io.github._3xhaust.annotations.types.Post("create")
-    public Post create(@Body CreatePostDto post) {
+    public Map<String, Object> create(@Body CreatePostDto post) {
         return postService.create(post);
     }
 

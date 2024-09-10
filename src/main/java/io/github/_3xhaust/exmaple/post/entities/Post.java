@@ -11,7 +11,7 @@ import lombok.Setter;
 @Entity
 public class Post {
     @PrimaryGeneratedColumn(strategy = "increment")
-    private Long id;
+    private Long post_id;
 
     @Column(unique = true)
     private String title;

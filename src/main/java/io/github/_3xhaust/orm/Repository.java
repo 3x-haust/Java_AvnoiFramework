@@ -8,6 +8,5 @@ public interface Repository<T> {
     List<T> find();
     List<T> findOne(Map<String, Object> where);
     void delete(T entity);
-    void update(T entity);
     T create(Object dto);
 }
