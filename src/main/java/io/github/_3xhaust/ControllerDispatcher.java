@@ -2,15 +2,19 @@ package io.github._3xhaust;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
+import io.github._3xhaust.annotations.Query;
 import io.github._3xhaust.annotations.types.Body;
 import io.github._3xhaust.annotations.types.Param;
 
 import java.io.*;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ControllerDispatcher {
     private final Map<Class<?>, Object> applicationContext;
@@ -24,11 +28,23 @@ public class ControllerDispatcher {
         if (controllerInstance == null) {
             throw new IllegalStateException("Controller instance not found in applicationContext: " + method.getDeclaringClass().getName());
         }
-        Object[] parameters = getMethodParameters(method, exchange);
-        return method.invoke(controllerInstance, parameters);
+
+        if (method.isAnnotationPresent(io.github._3xhaust.annotations.Redirect.class)) {
+            io.github._3xhaust.annotations.Redirect redirectAnnotation = method.getAnnotation(io.github._3xhaust.annotations.Redirect.class);
+
+            Object result = method.invoke(controllerInstance, getMethodParameters(method, exchange));
+            if (result instanceof Map && ((Map<?, ?>) result).containsKey("url")) {
+                return result;
+            } else {
+                return Map.of("url", redirectAnnotation.url());
+            }
+        } else {
+            Object[] parameters = getMethodParameters(method, exchange);
+            return method.invoke(controllerInstance, parameters);
+        }
     }
 
-    private Object[] getMethodParameters(Method method, HttpExchange exchange) throws IOException {
+    private Object[] getMethodParameters(Method method, HttpExchange exchange) throws Exception {
         Parameter[] parameters = method.getParameters();
         Object[] values = new Object[parameters.length];
 
@@ -36,7 +52,9 @@ public class ControllerDispatcher {
             Parameter parameter = parameters[i];
 
             if (parameter.isAnnotationPresent(Param.class)) {
-                values[i] = getParameterValue(exchange, parameter);
+                values[i] = getPathParameterValue(exchange, parameter);
+            } else if (parameter.isAnnotationPresent(Query.class)) {
+                values[i] = getQueryParameterValue(exchange, parameter);
             } else if (parameter.isAnnotationPresent(Body.class)) {
                 values[i] = getRequestBody(exchange, parameter);
             }
@@ -45,17 +63,35 @@ public class ControllerDispatcher {
         return values;
     }
 
-    private Object getParameterValue(HttpExchange exchange, Parameter parameter) {
+    private Object getPathParameterValue(HttpExchange exchange, Parameter parameter) {
         String paramName = parameter.getAnnotation(Param.class).value();
-        String query = exchange.getRequestURI().getQuery();
-        Map<String, String> queryParams = parseQueryParams(query);
-        String paramValue = queryParams.get(paramName);
+        String path = exchange.getRequestURI().getPath();
 
-        if (paramValue == null) {
-            return null;
+        Pattern pattern = Pattern.compile("/" + paramName + "/([^/]+)");
+        Matcher matcher = pattern.matcher(path);
+        if (matcher.find()) {
+            String paramValue = matcher.group(1);
+            return convertStringToType(paramValue, parameter.getType());
+        }
+        return null;
+    }
+
+    private Object getQueryParameterValue(HttpExchange exchange, Parameter parameter) throws Exception {
+        Class<?> parameterType = parameter.getType();
+        String queryString = exchange.getRequestURI().getQuery();
+        Map<String, String> queryParams = parseQueryParams(queryString);
+
+        Object dtoInstance = parameterType.getDeclaredConstructor().newInstance();
+        for (Field field : parameterType.getDeclaredFields()) {
+            String fieldName = field.getName();
+            if (queryParams.containsKey(fieldName)) {
+                String fieldValue = queryParams.get(fieldName);
+                field.setAccessible(true);
+                field.set(dtoInstance, convertStringToType(fieldValue, field.getType()));
+            }
         }
 
-        return convertStringToType(paramValue, parameter.getType());
+        return dtoInstance;
     }
 
     private Object getRequestBody(HttpExchange exchange, Parameter parameter) throws IOException {
@@ -132,7 +168,6 @@ public class ControllerDispatcher {
                     if (fileName != null) {
                         isFilePart = true;
                         fileContent = new ByteArrayOutputStream();
-                        // 파일 이름을 저장하도록 수정
                         formData.put(fieldName, fileName);
                     }
                 } else if (line.isEmpty() && isFilePart) continue;
@@ -217,6 +252,7 @@ public class ControllerDispatcher {
             throw new IllegalArgumentException("Unsupported field type: " + targetType.getName());
         }
     }
+
     private String readRawBody(HttpExchange exchange) throws IOException {
         InputStream inputStream = exchange.getRequestBody();
         StringBuilder sb = new StringBuilder();

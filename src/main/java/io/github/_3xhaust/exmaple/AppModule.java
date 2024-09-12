@@ -11,13 +11,18 @@ import static io.github._3xhaust.orm.DataSourceOptions.sqlite;
         imports = {
                 PostModule.class,
                 AvnoiOrmModule.class
+        },
+        controllers = {
+                AppController.class
+        },
+        providers = {
+                AppService.class
         }
 )
 public class AppModule {
          static {
                  AvnoiOrmModule.forRoot(
                         sqlite("blog.db", true)
-                         //mysql("localhost", true, "root", "root")
                 );
          }
 }

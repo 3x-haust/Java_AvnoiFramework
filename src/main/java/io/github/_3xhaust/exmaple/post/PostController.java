@@ -2,6 +2,7 @@ package io.github._3xhaust.exmaple.post;
 
 import io.github._3xhaust.annotations.Controller;
 import io.github._3xhaust.annotations.Inject;
+import io.github._3xhaust.annotations.Query;
 import io.github._3xhaust.annotations.types.Body;
 import io.github._3xhaust.annotations.types.Get;
 import io.github._3xhaust.annotations.types.Param;
@@ -21,22 +22,22 @@ public class PostController {
     }
 
     @io.github._3xhaust.annotations.types.Post("create")
-    public Map<String, Object> create(@Body CreatePostDto post) {
+    public Object create(@Body CreatePostDto post) {
         return postService.create(post);
     }
 
     @Get("findById")
-    public List<Post> findById(@Param("id") Long id) {
+    public Object findById(@Query("id") Long id) {
         return postService.findById(id);
     }
 
     @Get("findAll")
-    public List<Post> findAll() {
+    public Object findAll() {
         return postService.findAll();
     }
 
     @Get("findByTitle")
-    public List<Post> findByTitle(@Param("title") String title) {
+    public Object findByTitle(@Query("title") String title) {
         return postService.findByTitle(title);
     }
 

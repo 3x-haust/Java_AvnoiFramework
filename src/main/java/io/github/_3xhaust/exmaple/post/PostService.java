@@ -22,7 +22,7 @@ public class PostService {
         this.postRepository = repositoryFactory.getRepository(Post.class);
     }
 
-    public Map<String, Object> create(CreatePostDto createPostDto) {
+    public Object create(CreatePostDto createPostDto) {
         try {
             Post newPost = this.postRepository.create(createPostDto);
             newPost.setTitle(createPostDto.getTitle());
@@ -48,15 +48,15 @@ public class PostService {
         }
     }
 
-    public List<Post> findById(Long id) {
+    public Object findById(Long id) {
         return this.postRepository.findOne(Map.of("id", id));
     }
 
-    public List<Post> findAll() {
+    public Object findAll() {
         return this.postRepository.find();
     }
 
-    public List<Post> findByTitle(String title) {
+    public Object findByTitle(String title) {
         return this.postRepository.findOne(Map.of("title", title));
     }
 }

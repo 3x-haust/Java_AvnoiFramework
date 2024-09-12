@@ -255,7 +255,11 @@ public class RepositoryImpl<T> implements Repository<T> {
             for (Field field : fields) {
                 field.setAccessible(true);
                 String fieldName = field.getName();
-                field.set(entity, resultSet.getObject(fieldName));
+                if (field.getType() == Long.class) {
+                    field.set(entity, resultSet.getLong(fieldName));
+                } else {
+                    field.set(entity, resultSet.getObject(fieldName));
+                }
             }
             return entity;
         } catch (Exception e) {

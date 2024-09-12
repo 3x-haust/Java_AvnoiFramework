@@ -9,6 +9,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import io.github._3xhaust.annotations.Controller;
 import io.github._3xhaust.annotations.Module;
+import io.github._3xhaust.annotations.Redirect;
 import io.github._3xhaust.annotations.Service;
 import io.github._3xhaust.orm.AvnoiOrmModule;
 import io.github._3xhaust.orm.DataSourceOptions;
@@ -45,7 +46,7 @@ public class Avnoi {
     private final ControllerDispatcher dispatcher;
     private static final Map<Class<?>, Object> applicationContext = new HashMap<>();
     private static int port = 8080;
-    private static final String version = "0.1.0";
+    private static final String version = "0.1.3";
 
     public Avnoi(Class<?> modules) throws InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
         try {
@@ -156,21 +157,38 @@ public class Avnoi {
 
         for (Method method : controller.getDeclaredMethods()) {
             if (method.isAnnotationPresent(io.github._3xhaust.annotations.types.Get.class)) {
-                String path = baseUrl + method.getAnnotation(io.github._3xhaust.annotations.types.Get.class).value();
-                router.registerRoute(HttpMethod.GET, path, method);
+                registerRoute(method, baseUrl, HttpMethod.GET);
             } else if (method.isAnnotationPresent(io.github._3xhaust.annotations.types.Post.class)) {
-                String path = baseUrl + method.getAnnotation(io.github._3xhaust.annotations.types.Post.class).value();
-                router.registerRoute(HttpMethod.POST, path, method);
+                registerRoute(method, baseUrl, HttpMethod.POST);
             } else if (method.isAnnotationPresent(io.github._3xhaust.annotations.types.Put.class)) {
-                String path = baseUrl + method.getAnnotation(io.github._3xhaust.annotations.types.Put.class).value();
-                router.registerRoute(HttpMethod.PUT, path, method);
+                registerRoute(method, baseUrl, HttpMethod.PUT);
             } else if (method.isAnnotationPresent(io.github._3xhaust.annotations.types.Patch.class)) {
-                String path = baseUrl + method.getAnnotation(io.github._3xhaust.annotations.types.Patch.class).value();
-                router.registerRoute(HttpMethod.PATCH, path, method);
+                registerRoute(method, baseUrl, HttpMethod.PATCH);
             } else if (method.isAnnotationPresent(io.github._3xhaust.annotations.types.Delete.class)) {
-                String path = baseUrl + method.getAnnotation(io.github._3xhaust.annotations.types.Delete.class).value();
-                router.registerRoute(HttpMethod.DELETE, path, method);
+                registerRoute(method, baseUrl, HttpMethod.DELETE);
             }
+        }
+    }
+
+    private void registerRoute(Method method, String baseUrl, HttpMethod httpMethod) {
+        String path = baseUrl + getPathFromAnnotation(method, httpMethod);
+        router.registerRoute(httpMethod, path, method);
+
+        if (method.isAnnotationPresent(io.github._3xhaust.annotations.Redirect.class)) {
+            io.github._3xhaust.annotations.Redirect redirectAnnotation = method.getAnnotation(io.github._3xhaust.annotations.Redirect.class);
+            String redirectPath = redirectAnnotation.url();
+            router.registerRedirect(httpMethod, path, redirectPath, redirectAnnotation.statusCode());
+        }
+    }
+
+    private String getPathFromAnnotation(Method method, HttpMethod httpMethod) {
+        switch (httpMethod) {
+            case GET: return method.getAnnotation(io.github._3xhaust.annotations.types.Get.class).value();
+            case POST: return method.getAnnotation(io.github._3xhaust.annotations.types.Post.class).value();
+            case PUT: return method.getAnnotation(io.github._3xhaust.annotations.types.Put.class).value();
+            case PATCH: return method.getAnnotation(io.github._3xhaust.annotations.types.Patch.class).value();
+            case DELETE: return method.getAnnotation(io.github._3xhaust.annotations.types.Delete.class).value();
+            default: throw new IllegalArgumentException("Invalid HTTP method: " + httpMethod);
         }
     }
 
@@ -204,18 +222,21 @@ public class Avnoi {
             long startTime = System.currentTimeMillis();
             String method = exchange.getRequestMethod();
             String path = exchange.getRequestURI().getPath();
+
             CompletableFuture.runAsync(() -> {
                 try {
                     int statusCode = 200;
                     String responseBody = "";
 
                     Method handler = router.findHandler(HttpMethod.valueOf(method), path);
-
                     if (handler != null) {
                         Object result = dispatcher.dispatch(handler, exchange);
 
                         if (result instanceof String) {
                             responseBody = (String) result;
+                        }  else if (result instanceof Map && ((Map<?, ?>) result).containsKey("url") && handler.isAnnotationPresent(Redirect.class)) {
+                            statusCode = handler.getAnnotation(Redirect.class).statusCode();
+                            exchange.getResponseHeaders().add("Location", ((Map<?, ?>) result).get("url").toString());
                         } else {
                             responseBody = objectMapper.writeValueAsString(result);
                         }
@@ -228,7 +249,7 @@ public class Avnoi {
 
                     long endTime = System.currentTimeMillis();
                     long processingTime = endTime - startTime;
-                    String statusColor = statusCode == 200 ? ANSI_GREEN : ANSI_YELLOW;
+                    String statusColor = statusCode == 200 ? ANSI_GREEN : statusCode < 400 ? ANSI_YELLOW : ANSI_RED;
 
                     System.out.printf("[%s] %s %s %s%d%s in %dms\n",
                             ANSI_CYAN + LocalDateTime.now().format(dateTimeFormatter) + ANSI_RESET,
