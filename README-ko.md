@@ -14,6 +14,27 @@
 **IDE**: `IDE로 인텔리제이를 사용하여 개발하는 것을 추천합니다.`  
 **Build System**: `프로젝트 빌드 시스템으로 Gradle 또는 Maven 중 하나를 선택합니다.`
 
+#### 의존성 추가
+
+**Gradle**  
+`build.gradle` 파일의 `dependencies` 블록 안에 다음 내용을 추가합니다.
+```gradle
+dependencies {
+    implementation group: 'io.github.3x-haust', name: 'avnoi-framework', version: '0.1.5'
+    // ... 기타 의존성
+}
+```
+
+**Maven**  
+`pom.xml` 파일의 `<dependencies>` 태그 안에 다음 내용을 추가합니다.
+```xml
+<dependency>
+    <groupId>io.github.3x-haust</groupId>
+    <artifactId>avnoi-framework</artifactId>
+    <version>0.1.5</version>
+</dependency>
+```
+
 <br/>
 
 ### 프로젝트 생성
