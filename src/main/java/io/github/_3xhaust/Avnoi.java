@@ -46,7 +46,7 @@ public class Avnoi {
     private final ControllerDispatcher dispatcher;
     private static final Map<Class<?>, Object> applicationContext = new HashMap<>();
     private static int port = 8080;
-    private static final String version = "0.1.3";
+    private static final String version = "0.1.5";
 
     public Avnoi(Class<?> modules) throws InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
         try {
