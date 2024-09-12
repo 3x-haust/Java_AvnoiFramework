@@ -55,7 +55,8 @@ import io.github._3xhaust.annotations.AvnoiApplication;
 @AvnoiApplication
 public class Main {
     public static void main(String[] args) {
-        Avnoi.listen(3000).run(AppModule.class);
+        Avnoi.listen(3000);
+        Avnoi.run(AppModule.class);
     }
 }
 ```
@@ -74,6 +75,7 @@ import io.github._3xhaust.annotations.AvnoiApplication
 class MainApp
 
 fun main() {
+    Avnoi.listen(3000)
     Avnoi.run(AppModule::class.java)
 }
 ```
