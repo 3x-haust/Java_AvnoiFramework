@@ -1,6 +1,6 @@
 Here's the English version of the README:
 
-[한국어 버전은 여기를 클릭하세요.](./README.ko.md)
+[한국어 버전은 여기를 클릭하세요.](./README-ko.md)
 
 # First Steps
 In this guide, you'll learn the core of the Avnoi framework. We'll create a basic CRUD application to get familiar with Avnoi!
