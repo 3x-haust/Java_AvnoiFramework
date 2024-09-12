@@ -1,4 +1,4 @@
-Here's the English version of the README:
+Here's the English version of the README:  
 [한국어 버전은 여기를 클릭하세요.](./README-ko.md)
 
 # First Steps
