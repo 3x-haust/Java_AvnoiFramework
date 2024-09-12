@@ -1,3 +1,6 @@
+This is the English version of the README.  
+[한국어 버전은 여기를 클릭하세요.](./README-ko.md)
+
 # First Steps
 
 This document will guide you through the core of the Avnoi framework. We'll be building a basic CRUD application to get you acquainted with the framework!
