@@ -1,3 +1,6 @@
+이 README는 한국어 버전입니다.  
+[Click here for the English version.](./README.md)
+
 # 첫번째 단계
 
 이 글에서는 Avnoi 프레임워크의 핵심을 배우게 됩니다. 기본적인 CRUD 어플리케이션을 만들어보며 Avnoi 프레임워크와 친숙해져보겠습니다!
