@@ -143,7 +143,7 @@ import io.github._3xhaust.annotations.Controller;
 import io.github._3xhaust.annotations.Inject;
 import io.github._3xhaust.annotations.types.Get;
 
-@Controller("uesrs")
+@Controller("users")
 public class UsersController {
     @Get
     public String findAll() {
@@ -175,7 +175,7 @@ class UsersController {
 </details>
 
 `findAll()` 메서드 위에 있는 HTTP 요청 메서드 어노테이션 `@Get()`를 통해 HTTP 요청의 특정 엔드포엔트에 대한 핸들러를 만들 수 있습니다. 여기서 엔드포인트는 HTTP 요청 메서드(위의 경우 GET)와 라우트 경로를 말합니다.  
-그렇다면 라우트 경로는 어떻게 정해질까요? 라우트 경로는 컨트롤러에 정의되어 있는 경로와, 메서드의 어노테이션에 정의되어 있는 경로가 합쳐져서 정해집니다. `UsersController` 내의 모든 라우트에 `users`라는 문자로 시작되는 경로를 사용하도록 정의하였고, 어노테이션에는 경로에 관한 아무 정보도 주지 않았습니다. 따라서 Nest는 해당 핸들러를 `GET /users` 요청과 매핑시킵니다. 즉, 경로는 컨트롤러에 정의된 경로와 메서드 어노테이션에 정의된 경로를 포함합니다. 예를 들어, 컨트롤러에 `users`라고 경로가 정의되어 있고 메서드에 `Get("profile")`이라 정의되어 있다면, 이는 `GET /users/profile` 요청에 매핑됩니다.
+그렇다면 라우트 경로는 어떻게 정해질까요? 라우트 경로는 컨트롤러에 정의되어 있는 경로와, 메서드의 어노테이션에 정의되어 있는 경로가 합쳐져서 정해집니다. `UsersController` 내의 모든 라우트에 `users`라는 문자로 시작되는 경로를 사용하도록 정의하였고, 어노테이션에는 경로에 관한 아무 정보도 주지 않았습니다. 따라서 Avnoi 해당 핸들러를 `GET /users` 요청과 매핑시킵니다. 즉, 경로는 컨트롤러에 정의된 경로와 메서드 어노테이션에 정의된 경로를 포함합니다. 예를 들어, 컨트롤러에 `users`라고 경로가 정의되어 있고 메서드에 `Get("profile")`이라 정의되어 있다면, 이는 `GET /users/profile` 요청에 매핑됩니다.
 
 ### 자원
 
@@ -279,6 +279,8 @@ fun create(): String {
 }
 ```
 </details>
+
+
 
 ### 시작 및 실행
 

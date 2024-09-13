@@ -179,7 +179,7 @@ class UsersController {
 </details>
 
 You can use the HTTP request method annotation `@Get()` above the `findAll()` method to create a handler for a specific endpoint for the HTTP request. Here, the endpoint refers to the HTTP request method (GET in the above case) and the route path.  
-So how is the route path determined? The route path is determined by combining the path defined in the controller with the path defined in the method's annotation. We have defined that all routes within `UsersController` should use a path starting with the string `users`, and we haven't provided any information about the path in the annotation. Thus, Nest will map this handler to the `GET /users` request. In other words, the path consists of the path defined in the controller and the path defined in the method annotation. For example, if the controller has a path defined as `users` and the method is defined as `Get("profile")`, this would map to the `GET /users/profile` request.
+So how is the route path determined? The route path is determined by combining the path defined in the controller with the path defined in the method's annotation. We have defined that all routes within `UsersController` should use a path starting with the string `users`, and we haven't provided any information about the path in the annotation. Thus, Avnoi will map this handler to the `GET /users` request. In other words, the path consists of the path defined in the controller and the path defined in the method annotation. For example, if the controller has a path defined as `users` and the method is defined as `Get("profile")`, this would map to the `GET /users/profile` request.
 
 ### Resources
 
