@@ -1,27 +1,27 @@
-This is the English version of the README.  
-[한국어 버전은 여기를 클릭하세요.](./README-ko.md)
+## First Steps
 
-# First Steps
-In this guide, you'll learn the core of the Avnoi framework. We'll create a basic CRUD application to get familiar with Avnoi!
-
-### Language
-Most examples here use Java, but you can also implement using Kotlin.
+This document will guide you through the core fundamentals of the Avnoi framework. Let's dive in and create a basic CRUD application!
 
 ### Prerequisites
-**IDE**: `We recommend using IntelliJ IDEA for development.`  
-**Build System**: `Choose either Gradle or Maven as your project build system.`
 
-#### Adding Dependencies
+**IDE**: `IntelliJ IDEA is the recommended IDE for development.`  
+**Build System**: `Choose either Gradle or Maven as your project's build system.`
+
+#### Installing Dependencies
+
 **Gradle**  
-Add the following to the `dependencies` block in your `build.gradle` file:
+Add the following to your `build.gradle` file under the `dependencies` block:
+
 ```gradle
 dependencies {
     implementation group: 'io.github.3x-haust', name: 'avnoi-framework', version: '0.1.5'
     // ... other dependencies
 }
 ```
+
 **Maven**  
-Add the following within the `<dependencies>` tag in your `pom.xml` file:
+Add the following to your `pom.xml` file under the `<dependencies>` tag:
+
 ```xml
 <dependency>
     <groupId>io.github.3x-haust</groupId>
@@ -29,13 +29,16 @@ Add the following within the `<dependencies>` tag in your `pom.xml` file:
     <version>0.1.5</version>
 </dependency>
 ```
+
 <br/>
 
 ### Creating a Project
+
 <img width="500" alt="image" src="https://github.com/user-attachments/assets/443d28cf-eb7f-41b3-b6cc-16759f094353">
+
 <br></br>
 
-The basic structure of the project is as follows:
+The basic structure of the project will be as follows:
 
 ```
 src
@@ -44,23 +47,28 @@ src
 ├─ AppService.java
 └─ Main.java
 ```
+> **Tip**
+>
+> You can find the above files [here](https://github.com/3x-haust/Java_AvnoiFramework/tree/main/src/main/java/io/github/_3xhaust/exmaple/initial).
 
 <br></br>
 
-Here's a brief explanation of these core files:
-|File Name|Description|
+A brief explanation of the core files is as follows:
+
+|Filename|Description|
 |:---:|:---|
-|`AppController.java`|File containing a basic controller with a single route|
-|`AppModule.java`|File containing the root module of the application|
-|`AppService.java`|File containing a basic service with a single method|
-|`Main.java`|Entry file. Uses the core function `Avnoi` to create an Avnoi application instance.|
-> It's okay if you don't understand the controller, service, etc. mentioned above. Detailed explanations will come in later chapters!
+|`AppController.java`|Contains a basic controller with a single route.|
+|`AppModule.java`|Houses the root module of the application.|
+|`AppService.java`|Contains a basic service with a single method.|
+|`Main.java`|The entry point of your application. It uses the `Avnoi` class to create an Avnoi application instance.|
+
+> Don't worry if you don't understand controllers, services, etc., for now. We will explain them in detail in the following chapters!
 
 <br><br/>
 
-Let's start by creating the Main.java file. This file contains the Main method that starts the application.
+Let's start by simply creating a Main.java file. This file contains the Main method that starts the application.
 
-```Java
+```java
 //Main.java
 package <package>;
 
@@ -85,7 +93,7 @@ package <package>
 
 import AppModule
 import io.github._3xhaust.annotations.AvnoiApplication
-        
+
 @AvnoiApplication
 class MainApp
 
@@ -96,26 +104,31 @@ fun main() {
 ```
 </details>
 
-When creating an Avnoi application instance, we use the `Avnoi` class. This class provides several static methods for creating application instances, among which the `run` method used above starts the Avnoi application.
-The code in the above example can start a listener waiting for inbound HTTP requests.
-As you can see, the Avnoi framework is structured so that each module has its own dedicated directory.
+
+We use the `Avnoi` class to create an Avnoi application instance. The class offers several static methods for creating the application instance, including the `run` method used above to start the Avnoi application.
+
+The code in the example above allows you to start a listener that waits for inbound HTTP requests.
+
+The Avnoi framework is built in such a way that each module has its own dedicated directory.
 
 <br><br/>
 
 ### Running the Application
-If you're using IntelliJ IDEA, you can run the application by clicking the green triangle button in the top right corner.
+
+If you are using the IntelliJ IDEA IDE, you can run the application by clicking the green triangle button in the upper right corner.
 
 <br><br/>
 <br><br/>
 
 # Controllers
+
 Controllers are responsible for handling incoming **requests** and returning **responses** to the client.
 
 <img width="600" alt="image" src="https://github.com/user-attachments/assets/8a6d3c0a-0957-4587-824b-22495662578a">
 
 ## Routing
 
-In the following example, we'll use the `@Controller()` decorator which is required when defining a basic controller. By specifying the route path in the `@Controller()` decorator, you can easily group related routes and minimize repetitive code. For instance, you might group routes that manage interactions with the customer entity under the `/users` route. In this case, you can simply put the value `users` in the `@Controller()` decorator to specify the path without having to repeat it in each route path.
+In the example below, we'll use the `@Controller()` annotation, which is required to define a basic controller. By specifying a path in the `@Controller()` annotation, we can easily group related routes, minimizing code repetition. For example, you might group the routes that manage interaction with the Customers entity under the `/users` route. In this case, you can specify the path by putting the value `users` in the `@Controller()` annotation without having to repeatedly include it in each route path.
 
 ```java
 // UsersController.java
@@ -125,7 +138,7 @@ import io.github._3xhaust.annotations.Controller;
 import io.github._3xhaust.annotations.Inject;
 import io.github._3xhaust.annotations.types.Get;
 
-@Controller("uesrs")
+@Controller("users")
 public class UsersController {
     @Get
     public String findAll() {
@@ -156,12 +169,12 @@ class UsersController {
 ```
 </details>
 
-The HTTP request method decorator `@Get()` above the `findAll()` method lets us create a handler for a particular endpoint in our application. An endpoint refers to the combination of the HTTP request method (GET in the above case) and the route path.
-So how is the route path determined? It is determined by combining the path defined in the controller with the path defined in the method's decorator. We have defined all routes within the `UsersController` to use a route path starting with the string `users` and haven't provided any path information in the decorator. Therefore, Nest will map this handler to `GET /users` requests. In other words, the route path consists of the path defined in the controller and the path defined in the method decorator. For example, if the controller has a defined path of `users` and the method has `Get("profile")` defined, this will be mapped to `GET /users/profile` requests. 
+You can use the HTTP request method annotation `@Get()` above the `findAll()` method to create a handler for a specific endpoint for the HTTP request. Here, the endpoint refers to the HTTP request method (GET in the above case) and the route path.  
+So how is the route path determined? The route path is determined by combining the path defined in the controller with the path defined in the method's annotation. We have defined that all routes within `UsersController` should use a path starting with the string `users`, and we haven't provided any information about the path in the annotation. Thus, Nest will map this handler to the `GET /users` request. In other words, the path consists of the path defined in the controller and the path defined in the method annotation. For example, if the controller has a path defined as `users` and the method is defined as `Get("profile")`, this would map to the `GET /users/profile` request.
 
 ### Resources
 
-Earlier we defined an endpoint to fetch the `users` resource with **GET**.  Typically, you would also want to provide an endpoint for creating new data.  Let's create a **POST** handler for that:
+We've now defined an endpoint for retrieving 'users' resources using a **GET** request. Typically, you'll also want to provide an endpoint for creating new data. Let's go ahead and create a **POST** handler.
 
 ```java
 // UsersController.java
@@ -171,16 +184,16 @@ import io.github._3xhaust.annotations.Controller;
 import io.github._3xhaust.annotations.Inject;
 import io.github._3xhaust.annotations.types.Get;
 
-@Controller("uesrs")
+@Controller("users")
 public class UsersController {
     @Get
     public String findAll() {
-        return "This will return all users";
+        return "This action returns all users";
     }
     
     @Post
     public String create() {
-        return "This will create a new user";
+        return "This action adds a new user";
     }
 }
 ```
@@ -190,7 +203,7 @@ public class UsersController {
 
 ```kt
 // UsersController.kt
-package io.github._3xhaust
+package <package>
 
 import io.github._3xhaust.annotations.Controller
 import io.github._3xhaust.annotations.Inject
@@ -201,27 +214,27 @@ class UsersController {
 
     @Get
     fun findAll(): String {
-        return "This will return all users";
+        return "This action returns all users";
     }
 
     @Post
-    fun create(): String {
-        return "This will create a new user";
+    fun create(): string {
+        return "This action adds a new user";
     }
 }
 ```
 </details>
 
-Avnoi provides annotations for all standard HTTP methods in addition to `@Post`:  `@Get()`, `@Post()`, `@Put()`, `@Delete()`, `@Patch()`, `@Options()`, `@Header()`. You can also use `@All()` when you want to define the endpoint for all methods.
+In addition to `@Post`, Avnoi provides annotations for all standard HTTP methods: `@Get()`, `@Post()`, `@Put()`, `@Delete()`, `@Patch()`, `@Options()`, `@Header()`. Additionally, if you want to define an endpoint for all methods, you can use `@All()`.
 
 ### Route Wildcards
 
-You can also use pattern-based routing.  For example, an asterisk (`*`) can be used as a wildcard to match any combination of characters.
+Pattern-based routing is also supported. For example, an asterisk (`*`) is used as a wildcard that matches any combination of characters.
 
 ```java
 @Get("ab*cd")
 public String findAll() {
-    return "This route uses wildcards";
+    return "This route uses a wildcard";
 }
 ```
 
@@ -231,22 +244,22 @@ public String findAll() {
 ```kt
 @Get("ab*cd")
 fun findAll(): String {
-    return "This route uses wildcards"
+    return "This route uses a wildcard";
 }
 ```
 </details>
 
-The route path `'ab*cd'` would match `abcd`, `ab_cd`, `ab1234cd`, and so on. It would match any string that starts with `ab` and ends with `cd`.
+The route path `'ab*cd'` would match `abcd`, `ab_cd`, `ab1234cd`, and so on. It would match any string that begins with `ab` and ends with `cd`.
 
 ### Status Codes
 
-As mentioned above, the **status code** of all responses defaults to **200**, except for POST requests which return **201**.  You can change the status code of the response by annotating your handler with `@HttpCode(...)`.
+As mentioned earlier, the **status code** for every response defaults to **200**, except for **POST** requests, which default to **201**. You can change this with the `@HttpCode(...)` decorator at the handler level.
 
 ```java
 @Post
 @HttpCode(204)
 public String create() {
-    return "This will create a new user";
+    return "This action adds a new user";
 }
 ```
 
@@ -257,7 +270,43 @@ public String create() {
 @Post
 @HttpCode(204)
 fun create(): String {
-    return "This will create a new user"
+    return "This action adds a new user"
 }
 ```
 </details>
+
+### Getting Up and Running
+
+With all of our controllers defined, the framework still doesn't know that the `UsersController` exists, so no instance of the class is created.
+
+Controllers should be associated with a module, so you need to add them to the `controllers` array within the `@Module()` annotation. Since we haven't defined any modules other than `AppModule` yet, let's use this module to make the `UsersController` known to the framework.
+
+```java
+//AppModule.java
+package <package>;
+
+import io.github._3xhaust.annotations.Module;
+
+@Module(
+    controllers = {UsersController.class}
+)
+public class AppModule {}
+```
+
+<details>
+<summary>Kotlin</summary>
+
+```kt
+package <package>
+
+import io.github._3xhaust.annotations.Module
+
+
+@Module(
+    controllers = [AppController::class]
+)
+class AppModule {}
+```
+</details>
+
+We used the `@Module()` annotation to decorate the module class with metadata. Now the framework can easily determine which controller it should mount.
