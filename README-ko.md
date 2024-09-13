@@ -16,6 +16,8 @@
 
 #### 의존성 추가
 
+최신 버전은 [여기](https://central.sonatype.com/artifact/io.github.3x-haust/avnoi-framework/overview)에서 확인할 수 있습니다.
+
 **Gradle**  
 `build.gradle` 파일의 `dependencies` 블록 안에 다음 내용을 추가합니다.
 ```gradle

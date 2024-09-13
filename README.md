@@ -16,6 +16,8 @@ Most examples provided here use Java, but can also be implemented using Kotlin.
 
 #### Installing Dependencies
 
+The latest version can be found [here](https://central.sonatype.com/artifact/io.github.3x-haust/avnoi-framework/overview)
+
 **Gradle**  
 Add the following to your `build.gradle` file under the `dependencies` block:
 
