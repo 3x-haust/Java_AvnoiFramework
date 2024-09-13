@@ -7,10 +7,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
-import io.github._3xhaust.annotations.Controller;
+import io.github._3xhaust.annotations.*;
 import io.github._3xhaust.annotations.Module;
-import io.github._3xhaust.annotations.Redirect;
-import io.github._3xhaust.annotations.Service;
+import io.github._3xhaust.annotations.types.*;
 import io.github._3xhaust.orm.AvnoiOrmModule;
 import io.github._3xhaust.orm.DataSourceOptions;
 import io.github._3xhaust.orm.RepositoryFactory;
@@ -18,6 +17,7 @@ import io.github._3xhaust.orm.RepositoryFactoryImpl;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -46,7 +46,7 @@ public class Avnoi {
     private final ControllerDispatcher dispatcher;
     private static final Map<Class<?>, Object> applicationContext = new HashMap<>();
     private static int port = 8080;
-    private static final String version = "0.1.5";
+    private static final String version = "0.1.6";
 
     public Avnoi(Class<?> modules) throws InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
         try {
@@ -131,7 +131,7 @@ public class Avnoi {
     private Object createInstance(Class<?> clazz)
             throws InvocationTargetException, InstantiationException, IllegalAccessException, NoSuchMethodException {
         for (Constructor<?> constructor : clazz.getDeclaredConstructors()) {
-            if (constructor.isAnnotationPresent(io.github._3xhaust.annotations.Inject.class)) {
+            if (constructor.isAnnotationPresent(Inject.class)) {
                 Class<?>[] parameterTypes = constructor.getParameterTypes();
                 Object[] parameters = new Object[parameterTypes.length];
                 for (int i = 0; i < parameterTypes.length; i++) {
@@ -151,21 +151,31 @@ public class Avnoi {
     private void mapController(Class<?> controller) {
         String baseUrl = controller.getAnnotation(Controller.class).value();
 
-        if (!baseUrl.endsWith("/")) {
-            baseUrl += "/";
-        }
+        if (!baseUrl.startsWith("/")) baseUrl = "/" + baseUrl;
 
         for (Method method : controller.getDeclaredMethods()) {
-            if (method.isAnnotationPresent(io.github._3xhaust.annotations.types.Get.class)) {
+            if (method.isAnnotationPresent(Get.class)) {
                 registerRoute(method, baseUrl, HttpMethod.GET);
-            } else if (method.isAnnotationPresent(io.github._3xhaust.annotations.types.Post.class)) {
+            } else if (method.isAnnotationPresent(Post.class)) {
                 registerRoute(method, baseUrl, HttpMethod.POST);
-            } else if (method.isAnnotationPresent(io.github._3xhaust.annotations.types.Put.class)) {
+            } else if (method.isAnnotationPresent(Put.class)) {
                 registerRoute(method, baseUrl, HttpMethod.PUT);
-            } else if (method.isAnnotationPresent(io.github._3xhaust.annotations.types.Patch.class)) {
+            } else if (method.isAnnotationPresent(Patch.class)) {
                 registerRoute(method, baseUrl, HttpMethod.PATCH);
-            } else if (method.isAnnotationPresent(io.github._3xhaust.annotations.types.Delete.class)) {
+            } else if (method.isAnnotationPresent(Delete.class)) {
                 registerRoute(method, baseUrl, HttpMethod.DELETE);
+            } else if (method.isAnnotationPresent(Head.class)) {
+                registerRoute(method, baseUrl, HttpMethod.HEAD);
+            } else if (method.isAnnotationPresent(Options.class)) {
+                registerRoute(method, baseUrl, HttpMethod.OPTIONS);
+            } else if (method.isAnnotationPresent(All.class)) {
+                registerRoute(method, baseUrl, HttpMethod.GET);
+                registerRoute(method, baseUrl, HttpMethod.POST);
+                registerRoute(method, baseUrl, HttpMethod.PUT);
+                registerRoute(method, baseUrl, HttpMethod.PATCH);
+                registerRoute(method, baseUrl, HttpMethod.DELETE);
+                registerRoute(method, baseUrl, HttpMethod.HEAD);
+                registerRoute(method, baseUrl, HttpMethod.OPTIONS);
             }
         }
     }
@@ -182,13 +192,27 @@ public class Avnoi {
     }
 
     private String getPathFromAnnotation(Method method, HttpMethod httpMethod) {
+        Annotation annotation = null;
         switch (httpMethod) {
-            case GET: return method.getAnnotation(io.github._3xhaust.annotations.types.Get.class).value();
-            case POST: return method.getAnnotation(io.github._3xhaust.annotations.types.Post.class).value();
-            case PUT: return method.getAnnotation(io.github._3xhaust.annotations.types.Put.class).value();
-            case PATCH: return method.getAnnotation(io.github._3xhaust.annotations.types.Patch.class).value();
-            case DELETE: return method.getAnnotation(io.github._3xhaust.annotations.types.Delete.class).value();
+            case GET: annotation = method.getAnnotation(Get.class); break;
+            case POST: annotation = method.getAnnotation(Post.class); break;
+            case PUT: annotation = method.getAnnotation(Put.class); break;
+            case PATCH: annotation = method.getAnnotation(Patch.class); break;
+            case DELETE: annotation = method.getAnnotation(Delete.class); break;
+            case HEAD: annotation = method.getAnnotation(Head.class); break;
+            case OPTIONS: annotation = method.getAnnotation(Options.class); break;
             default: throw new IllegalArgumentException("Invalid HTTP method: " + httpMethod);
+        }
+        if (annotation != null) {
+            try {
+                return (String) annotation.annotationType().getMethod("value").invoke(annotation);
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                throw new RuntimeException(e);
+            }
+        } else if (method.isAnnotationPresent(All.class)) {
+            return method.getAnnotation(All.class).value();
+        } else {
+            throw new IllegalArgumentException("No matching annotation found for HTTP method: " + httpMethod);
         }
     }
 
@@ -225,7 +249,7 @@ public class Avnoi {
 
             CompletableFuture.runAsync(() -> {
                 try {
-                    int statusCode = 200;
+                    int statusCode = method.equals("POST") ? 201 : 200;
                     String responseBody = "";
 
                     Method handler = router.findHandler(HttpMethod.valueOf(method), path);
@@ -234,8 +258,8 @@ public class Avnoi {
 
                         if (result instanceof String) {
                             responseBody = (String) result;
-                        }  else if (result instanceof Map && ((Map<?, ?>) result).containsKey("url") && handler.isAnnotationPresent(Redirect.class)) {
-                            statusCode = handler.getAnnotation(Redirect.class).statusCode();
+                        }  else if (result instanceof Map && ((Map<?, ?>) result).containsKey("url") && handler.isAnnotationPresent(io.github._3xhaust.annotations.Redirect.class)) {
+                            statusCode = handler.getAnnotation(io.github._3xhaust.annotations.Redirect.class).statusCode();
                             exchange.getResponseHeaders().add("Location", ((Map<?, ?>) result).get("url").toString());
                         } else {
                             responseBody = objectMapper.writeValueAsString(result);
@@ -249,7 +273,7 @@ public class Avnoi {
 
                     long endTime = System.currentTimeMillis();
                     long processingTime = endTime - startTime;
-                    String statusColor = statusCode == 200 ? ANSI_GREEN : statusCode < 400 ? ANSI_YELLOW : ANSI_RED;
+                    String statusColor = statusCode >= 200 && statusCode < 300 ? ANSI_GREEN : ANSI_RED;
 
                     System.out.printf("[%s] %s %s %s%d%s in %dms\n",
                             ANSI_CYAN + LocalDateTime.now().format(dateTimeFormatter) + ANSI_RESET,
