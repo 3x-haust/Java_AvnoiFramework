@@ -182,13 +182,21 @@ public class Avnoi {
 
     private void registerRoute(Method method, String baseUrl, HttpMethod httpMethod) {
         String path = baseUrl + getPathFromAnnotation(method, httpMethod);
-        router.registerRoute(httpMethod, path, method);
+        int statusCode = getStatusCodeFromAnnotation(method);
+        router.registerRoute(httpMethod, path, method, statusCode);
 
         if (method.isAnnotationPresent(io.github._3xhaust.annotations.Redirect.class)) {
             io.github._3xhaust.annotations.Redirect redirectAnnotation = method.getAnnotation(io.github._3xhaust.annotations.Redirect.class);
             String redirectPath = redirectAnnotation.url();
             router.registerRedirect(httpMethod, path, redirectPath, redirectAnnotation.statusCode());
         }
+    }
+
+    private int getStatusCodeFromAnnotation(Method method) {
+        if (method.isAnnotationPresent(HttpCode.class)) {
+            return method.getAnnotation(HttpCode.class).value();
+        }
+        return 200; // Default status code
     }
 
     private String getPathFromAnnotation(Method method, HttpMethod httpMethod) {
@@ -249,16 +257,19 @@ public class Avnoi {
 
             CompletableFuture.runAsync(() -> {
                 try {
-                    int statusCode = method.equals("POST") ? 201 : 200;
+                    int statusCode = 200;
                     String responseBody = "";
 
-                    Method handler = router.findHandler(HttpMethod.valueOf(method), path);
-                    if (handler != null) {
+                    RouteHandler routeHandler = router.findHandler(HttpMethod.valueOf(method), path);
+                    if (routeHandler != null) {
+                        Method handler = routeHandler.getHandlerMethod();
+                        statusCode = routeHandler.getStatusCode();
+
                         Object result = dispatcher.dispatch(handler, exchange);
 
                         if (result instanceof String) {
                             responseBody = (String) result;
-                        }  else if (result instanceof Map && ((Map<?, ?>) result).containsKey("url") && handler.isAnnotationPresent(io.github._3xhaust.annotations.Redirect.class)) {
+                        } else if (result instanceof Map && ((Map<?, ?>) result).containsKey("url") && handler.isAnnotationPresent(io.github._3xhaust.annotations.Redirect.class)) {
                             statusCode = handler.getAnnotation(io.github._3xhaust.annotations.Redirect.class).statusCode();
                             exchange.getResponseHeaders().add("Location", ((Map<?, ?>) result).get("url").toString());
                         } else {
@@ -274,7 +285,6 @@ public class Avnoi {
                     long endTime = System.currentTimeMillis();
                     long processingTime = endTime - startTime;
                     String statusColor = statusCode >= 200 && statusCode < 300 ? ANSI_GREEN : ANSI_RED;
-
                     System.out.printf("[%s] %s %s %s%d%s in %dms\n",
                             ANSI_CYAN + LocalDateTime.now().format(dateTimeFormatter) + ANSI_RESET,
                             method,
