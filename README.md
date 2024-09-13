@@ -5,7 +5,7 @@ This is the English version of the README.
 
 This document will guide you through the core fundamentals of the Avnoi framework. Let's dive in and create a basic CRUD application!
 
-### language
+### Language
 
 Most examples provided here use Java, but can also be implemented using Kotlin.
 
