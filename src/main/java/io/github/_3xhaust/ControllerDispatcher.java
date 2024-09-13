@@ -29,6 +29,11 @@ public class ControllerDispatcher {
             throw new IllegalStateException("Controller instance not found in applicationContext: " + method.getDeclaringClass().getName());
         }
 
+        io.github._3xhaust.annotations.types.Header[] methodHeaders = method.getAnnotationsByType(io.github._3xhaust.annotations.types.Header.class);
+        for (io.github._3xhaust.annotations.types.Header methodHeader : methodHeaders) {
+            exchange.getResponseHeaders().add(methodHeader.value(), methodHeader.defaultValue());
+        }
+
         if (method.isAnnotationPresent(io.github._3xhaust.annotations.Redirect.class)) {
             io.github._3xhaust.annotations.Redirect redirectAnnotation = method.getAnnotation(io.github._3xhaust.annotations.Redirect.class);
 
@@ -58,6 +63,7 @@ public class ControllerDispatcher {
             } else if (parameter.isAnnotationPresent(Body.class)) {
                 values[i] = getRequestBody(exchange, parameter);
             }
+            // 파라미터에 대한 @Header 애너테이션 처리는 제거
         }
 
         return values;

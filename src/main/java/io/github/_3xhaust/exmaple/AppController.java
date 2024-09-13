@@ -13,7 +13,7 @@ public class AppController {
         this.appService = appService;
     }
 
-    @Get()
+    @Get
     public String getHello() {
         return appService.getHello();
     }

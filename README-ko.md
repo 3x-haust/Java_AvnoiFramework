@@ -275,5 +275,40 @@ fun create(): String {
 ```
 </details>
 
+### 시작 및 실행
+
+위의 컨트롤러가 모두 정의되어도, 프레임워크는 `UsersController`가 존재한다는 사실을 모르며, 이 때문에 클래스의 인스턴스가 생성되지 않습니다.
+
+컨트롤러는 항상 모듈에 속해아 하므로, `@Module()` 어노테이션 내의 `controllers` 배열에 추가해주어야 합니다. 아직 `AppModule`을 제외하고는 아무 모듈도 정의하지 않았으므로, 이 모듈을 이용해서 프레임워크에게 `UsersController`를 알려줍시다.
+
+```java
+//AppModule.java
+package <패키지>;
+
+import io.github._3xhaust.annotations.Module;
+
+@Module(
+    controllers = {UsersController.class}
+)
+public class AppModule {}
+```
+
+<details>
+<summary>코틀린</summary>
+
+```kt
+package <패키지>
+
+import io.github._3xhaust.annotations.Module
+
+
+@Module(
+    controllers = [AppController::class]
+)
+class AppModule {}
+```
+</details>
+
+`@Module()` 어노테이션을 달아서, 모듈 클래스에 메타데이터를 설정했습니다. 이제, 프레임워크는 어떤 컨트롤러를 마운트해야 하는지 쉽게 알 수 있습니다.
 
 

@@ -46,7 +46,9 @@ public class Avnoi {
     private final ControllerDispatcher dispatcher;
     private static final Map<Class<?>, Object> applicationContext = new HashMap<>();
     private static int port = 8080;
-    private static final String version = "0.1.6";
+    private static final String version = "0.1.7";
+    public static boolean isOrmInitialized = false;
+    private static boolean isOrmRequired = false;
 
     public Avnoi(Class<?> modules) throws InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
         try {
@@ -55,8 +57,28 @@ public class Avnoi {
             throw new RuntimeException("Failed to load AppModule", e);
         }
 
+        checkOrmRequirement(modules);
+
+        if (isOrmRequired && !isOrmInitialized) {
+            throw new RuntimeException("ORM module is required but not initialized. Please call AvnoiOrmModule.forRoot() before creating an Avnoi instance.");
+        }
+
         scanAndInitialize(modules);
         this.dispatcher = new ControllerDispatcher(applicationContext);
+    }
+
+    private void checkOrmRequirement(Class<?> modules) {
+        Module moduleAnnotation = modules.getAnnotation(Module.class);
+        if (moduleAnnotation == null) {
+            throw new RuntimeException("The provided class is not annotated with @Module");
+        }
+
+        for (Class<?> importedModule : moduleAnnotation.imports()) {
+            if (importedModule == AvnoiOrmModule.class) {
+                isOrmRequired = true;
+                break;
+            }
+        }
     }
 
     public static void run(Class<?> modules) {
@@ -99,10 +121,11 @@ public class Avnoi {
                 scanAndInitialize(importedModule);
             }
 
-            DataSourceOptions dataSourceOptions = AvnoiOrmModule.getDataSourceOptions();
-
-            RepositoryFactory repositoryFactory = new RepositoryFactoryImpl(dataSourceOptions);
-            applicationContext.put(RepositoryFactory.class, repositoryFactory);
+            if (isOrmRequired) {
+                DataSourceOptions dataSourceOptions = AvnoiOrmModule.getDataSourceOptions();
+                RepositoryFactory repositoryFactory = new RepositoryFactoryImpl(dataSourceOptions);
+                applicationContext.put(RepositoryFactory.class, repositoryFactory);
+            }
 
             for (Class<?> providerClass : moduleAnnotation.providers()) {
                 if (!providerClass.isAnnotationPresent(Service.class)) {
@@ -164,7 +187,7 @@ public class Avnoi {
                 registerRoute(method, baseUrl, HttpMethod.PATCH);
             } else if (method.isAnnotationPresent(Delete.class)) {
                 registerRoute(method, baseUrl, HttpMethod.DELETE);
-            } else if (method.isAnnotationPresent(Head.class)) {
+            } else if (method.isAnnotationPresent(Header.class)) {
                 registerRoute(method, baseUrl, HttpMethod.HEAD);
             } else if (method.isAnnotationPresent(Options.class)) {
                 registerRoute(method, baseUrl, HttpMethod.OPTIONS);
@@ -207,7 +230,7 @@ public class Avnoi {
             case PUT: annotation = method.getAnnotation(Put.class); break;
             case PATCH: annotation = method.getAnnotation(Patch.class); break;
             case DELETE: annotation = method.getAnnotation(Delete.class); break;
-            case HEAD: annotation = method.getAnnotation(Head.class); break;
+            case HEAD: annotation = method.getAnnotation(Header.class); break;
             case OPTIONS: annotation = method.getAnnotation(Options.class); break;
             default: throw new IllegalArgumentException("Invalid HTTP method: " + httpMethod);
         }
@@ -284,7 +307,7 @@ public class Avnoi {
 
                     long endTime = System.currentTimeMillis();
                     long processingTime = endTime - startTime;
-                    String statusColor = statusCode >= 200 && statusCode < 300 ? ANSI_GREEN : ANSI_RED;
+                    String statusColor = statusCode < 300  ? ANSI_GREEN : statusCode < 400 ?  ANSI_YELLOW : ANSI_RED;
                     System.out.printf("[%s] %s %s %s%d%s in %dms\n",
                             ANSI_CYAN + LocalDateTime.now().format(dateTimeFormatter) + ANSI_RESET,
                             method,
