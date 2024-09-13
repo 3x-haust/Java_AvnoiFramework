@@ -7,8 +7,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
-import io.github._3xhaust.annotations.*;
+import io.github._3xhaust.annotations.Controller;
+import io.github._3xhaust.annotations.HttpCode;
+import io.github._3xhaust.annotations.Inject;
 import io.github._3xhaust.annotations.Module;
+import io.github._3xhaust.annotations.Service;
 import io.github._3xhaust.annotations.types.*;
 import io.github._3xhaust.orm.AvnoiOrmModule;
 import io.github._3xhaust.orm.DataSourceOptions;
@@ -28,6 +31,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -114,8 +118,8 @@ public class Avnoi {
     }
 
     private void scanAndInitialize(Class<?> modules) throws InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-        if (modules.isAnnotationPresent(Module.class)) {
-            Module moduleAnnotation = modules.getAnnotation(Module.class);
+        if (modules.isAnnotationPresent(io.github._3xhaust.annotations.Module.class)) {
+            io.github._3xhaust.annotations.Module moduleAnnotation = modules.getAnnotation(io.github._3xhaust.annotations.Module.class);
 
             for (Class<?> importedModule : moduleAnnotation.imports()) {
                 scanAndInitialize(importedModule);
@@ -174,7 +178,9 @@ public class Avnoi {
     private void mapController(Class<?> controller) {
         String baseUrl = controller.getAnnotation(Controller.class).value();
 
-        if (!baseUrl.startsWith("/")) baseUrl = "/" + baseUrl;
+        if (!baseUrl.startsWith("/")) {
+            baseUrl = "/" + baseUrl;
+        }
 
         for (Method method : controller.getDeclaredMethods()) {
             if (method.isAnnotationPresent(Get.class)) {
@@ -204,7 +210,13 @@ public class Avnoi {
     }
 
     private void registerRoute(Method method, String baseUrl, HttpMethod httpMethod) {
-        String path = baseUrl + getPathFromAnnotation(method, httpMethod);
+        String path = getPathFromAnnotation(method, httpMethod);
+
+        if (!baseUrl.endsWith("/") && !path.startsWith("/")) {
+            path = "/" + path;
+        }
+
+        path = baseUrl + path;
         int statusCode = getStatusCodeFromAnnotation(method);
         router.registerRoute(httpMethod, path, method, statusCode);
 
@@ -219,7 +231,7 @@ public class Avnoi {
         if (method.isAnnotationPresent(HttpCode.class)) {
             return method.getAnnotation(HttpCode.class).value();
         }
-        return 200; // Default status code
+        return 200;
     }
 
     private String getPathFromAnnotation(Method method, HttpMethod httpMethod) {
@@ -278,46 +290,53 @@ public class Avnoi {
             String method = exchange.getRequestMethod();
             String path = exchange.getRequestURI().getPath();
 
-            CompletableFuture.runAsync(() -> {
-                try {
-                    int statusCode = 200;
-                    String responseBody = "";
+            try {
+                int statusCode = 200;
+                String responseBody = "";
 
-                    RouteHandler routeHandler = router.findHandler(HttpMethod.valueOf(method), path);
-                    if (routeHandler != null) {
-                        Method handler = routeHandler.getHandlerMethod();
-                        statusCode = routeHandler.getStatusCode();
+                RouteHandler routeHandler = router.findHandler(HttpMethod.valueOf(method), path);
+                if (routeHandler != null) {
+                    Method handler = routeHandler.getHandlerMethod();
+                    statusCode = routeHandler.getStatusCode();
 
-                        Object result = dispatcher.dispatch(handler, exchange);
+                    Object result = dispatcher.dispatch(handler, exchange);
 
-                        if (result instanceof String) {
-                            responseBody = (String) result;
-                        } else if (result instanceof Map && ((Map<?, ?>) result).containsKey("url") && handler.isAnnotationPresent(io.github._3xhaust.annotations.Redirect.class)) {
-                            statusCode = handler.getAnnotation(io.github._3xhaust.annotations.Redirect.class).statusCode();
-                            exchange.getResponseHeaders().add("Location", ((Map<?, ?>) result).get("url").toString());
-                        } else {
-                            responseBody = objectMapper.writeValueAsString(result);
+                    if (result instanceof CompletableFuture) {
+                        try {
+                            result = ((CompletableFuture<?>) result).get();
+                        } catch (InterruptedException | ExecutionException e) {
+                            handleException(exchange, e, method, path, startTime);
+                            return;
                         }
-                    } else {
-                        statusCode = 404;
-                        responseBody = "The requested page could not be found. Please check the URL and try again.";
                     }
 
-                    sendResponse(exchange, statusCode, responseBody);
-
-                    long endTime = System.currentTimeMillis();
-                    long processingTime = endTime - startTime;
-                    String statusColor = statusCode < 300  ? ANSI_GREEN : statusCode < 400 ?  ANSI_YELLOW : ANSI_RED;
-                    System.out.printf("[%s] %s %s %s%d%s in %dms\n",
-                            ANSI_CYAN + LocalDateTime.now().format(dateTimeFormatter) + ANSI_RESET,
-                            method,
-                            path,
-                            ANSI_BOLD + statusColor, statusCode, ANSI_RESET,
-                            processingTime);
-                } catch (Exception e) {
-                    handleException(exchange, e, method, path, startTime);
+                    if (result instanceof String) {
+                        responseBody = (String) result;
+                    } else if (result instanceof Map && ((Map<?, ?>) result).containsKey("url") && handler.isAnnotationPresent(io.github._3xhaust.annotations.Redirect.class)) {
+                        statusCode = handler.getAnnotation(io.github._3xhaust.annotations.Redirect.class).statusCode();
+                        exchange.getResponseHeaders().add("Location", ((Map<?, ?>) result).get("url").toString());
+                    } else {
+                        responseBody = objectMapper.writeValueAsString(result);
+                    }
+                } else {
+                    statusCode = 404;
+                    responseBody = "The requested page could not be found. Please check the URL and try again.";
                 }
-            });
+
+                sendResponse(exchange, statusCode, responseBody);
+
+                long endTime = System.currentTimeMillis();
+                long processingTime = endTime - startTime;
+                String statusColor = statusCode < 300  ? ANSI_GREEN : statusCode < 400 ?  ANSI_YELLOW : ANSI_RED;
+                System.out.printf("[%s] %s %s %s%d%s in %dms\n",
+                        ANSI_CYAN + LocalDateTime.now().format(dateTimeFormatter) + ANSI_RESET,
+                        method,
+                        path,
+                        ANSI_BOLD + statusColor, statusCode, ANSI_RESET,
+                        processingTime);
+            } catch (Exception e) {
+                handleException(exchange, e, method, path, startTime);
+            }
         }
 
         private void handleException(HttpExchange exchange, Exception e, String method, String path, long startTime) {
@@ -336,11 +355,11 @@ public class Avnoi {
                             "timestamp", new Date().toString(),
                             "message", "Invalid request: " + e.getMessage()
                     ));
-                } else if (e instanceof HttpException httpException) {
+                } else if (e instanceof HttpException || e instanceof ExecutionException) {
+                    HttpException httpException = (HttpException) (e instanceof ExecutionException ? e.getCause() : e);
                     statusCode = httpException.getStatus().getCode();
                     responseBody = objectMapper.writeValueAsString(httpException.getDetails());
                 } else {
-                    e.printStackTrace();
                     responseBody = objectMapper.writeValueAsString(Map.of(
                             "status", statusCode,
                             "timestamp", new Date().toString(),

@@ -2,7 +2,6 @@ package io.github._3xhaust.exmaple.orm.post;
 
 import io.github._3xhaust.HttpException;
 import io.github._3xhaust.HttpStatus;
-import io.github._3xhaust.annotations.Async;
 import io.github._3xhaust.annotations.Inject;
 import io.github._3xhaust.annotations.Service;
 import io.github._3xhaust.exmaple.orm.post.dto.CreatePostDto;
@@ -23,7 +22,6 @@ public class PostService {
         this.postRepository = repositoryFactory.getRepository(Post.class);
     }
 
-    @Async
     public CompletableFuture<Object> create(CreatePostDto createPostDto) {
         return CompletableFuture.supplyAsync(() -> {
             long startTime = System.currentTimeMillis();

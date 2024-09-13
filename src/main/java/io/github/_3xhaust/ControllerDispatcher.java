@@ -13,6 +13,7 @@ import java.lang.reflect.Parameter;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -45,7 +46,13 @@ public class ControllerDispatcher {
             }
         } else {
             Object[] parameters = getMethodParameters(method, exchange);
-            return method.invoke(controllerInstance, parameters);
+            Object result = method.invoke(controllerInstance, parameters);
+
+            if (result instanceof CompletableFuture) {
+                return result;
+            } else {
+                return result;
+            }
         }
     }
 
@@ -63,7 +70,6 @@ public class ControllerDispatcher {
             } else if (parameter.isAnnotationPresent(Body.class)) {
                 values[i] = getRequestBody(exchange, parameter);
             }
-            // 파라미터에 대한 @Header 애너테이션 처리는 제거
         }
 
         return values;
