@@ -7,6 +7,8 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface Head {
-    String value() default "";
+public @interface Header {
+    String value();
+
+    String defaultValue() default "";
 }
