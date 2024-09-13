@@ -1,6 +1,13 @@
+This is the English version of the README.  
+[한국어 버전은 여기를 클릭하세요.](./README-ko.md)
+
 ## First Steps
 
 This document will guide you through the core fundamentals of the Avnoi framework. Let's dive in and create a basic CRUD application!
+
+### language
+
+Most examples provided here use Java, but can also be implemented using Kotlin.
 
 ### Prerequisites
 
