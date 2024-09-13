@@ -1,4 +1,4 @@
-package io.github._3xhaust.post.dto;
+package io.github._3xhaust.exmaple.orm.post.dto;
 
 import lombok.Getter;
 import lombok.Setter;

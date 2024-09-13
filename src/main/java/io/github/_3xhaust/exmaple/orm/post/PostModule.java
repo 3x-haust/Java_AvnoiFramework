@@ -1,8 +1,6 @@
-package io.github._3xhaust.post;
+package io.github._3xhaust.exmaple.orm.post;
 
 import io.github._3xhaust.annotations.Module;
-import io.github._3xhaust.exmaple.post.PostController;
-import io.github._3xhaust.exmaple.post.PostService;
 
 @Module(
         controllers = {PostController.class},

@@ -1,4 +1,4 @@
-package io.github._3xhaust.post.entities;
+package io.github._3xhaust.exmaple.orm.post.entities;
 
 import io.github._3xhaust.annotations.Entity;
 import io.github._3xhaust.annotations.orm.Column;
