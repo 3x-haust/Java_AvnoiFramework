@@ -51,6 +51,9 @@ src
 ├─ AppService.java
 └─ Main.java
 ```
+> **팁**
+> 
+> 위의 파일은 [이곳에서](https://github.com/3x-haust/Java_AvnoiFramework/tree/main/src/main/java/io/github/_3xhaust/exmaple/initial) 확인할 수 있습니다.
 
 <br></br>
 
