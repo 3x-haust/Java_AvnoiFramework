@@ -1,4 +1,4 @@
-package io.github._3xhaust.exmaple;
+package io.github._3xhaust.exmaple.initial;
 
 import io.github._3xhaust.annotations.Controller;
 import io.github._3xhaust.annotations.Inject;
