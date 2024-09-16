@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.util.DefaultIndenter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import io.github._3xhaust.annotations.Controller;
@@ -17,6 +18,7 @@ import io.github._3xhaust.orm.AvnoiOrmModule;
 import io.github._3xhaust.orm.DataSourceOptions;
 import io.github._3xhaust.orm.RepositoryFactory;
 import io.github._3xhaust.orm.RepositoryFactoryImpl;
+import lombok.Getter;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -27,13 +29,12 @@ import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.regex.Pattern;
 
 public class Avnoi {
     private static final String ANSI_RESET = "\u001B[0m";
@@ -50,9 +51,11 @@ public class Avnoi {
     private final ControllerDispatcher dispatcher;
     private static final Map<Class<?>, Object> applicationContext = new HashMap<>();
     private static int port = 8080;
-    private static final String version = "0.1.7";
+    private static final String version = "0.1.8";
     public static boolean isOrmInitialized = false;
     private static boolean isOrmRequired = false;
+
+    private static CorsOptions corsOptions = new CorsOptions();
 
     public Avnoi(Class<?> modules) throws InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
         try {
@@ -84,7 +87,20 @@ public class Avnoi {
             }
         }
     }
-
+    public static void run(Class<?> modules, Map<String, Object> options) {
+        if (options.containsKey("port") && options.get("port") instanceof Integer) {
+            Avnoi.listen((Integer) options.get("port"));
+        }
+        if (options.containsKey("cors")) {
+            if (options.get("cors") instanceof Boolean && (Boolean) options.get("cors")) {
+                Avnoi.enableCors();
+            } else if (options.get("cors") instanceof Map) {
+                //noinspection unchecked
+                Avnoi.enableCors((Map<String, Object>) options.get("cors"));
+            }
+        }
+        Avnoi.run(modules);
+    }
     public static void run(Class<?> modules) {
         try {
             Avnoi avnoi = new Avnoi(modules);
@@ -259,6 +275,38 @@ public class Avnoi {
         }
     }
 
+    public static void enableCors() {
+        corsOptions = new CorsOptions();
+        corsOptions.setOrigin("*");
+        corsOptions.setMethods("GET,HEAD,PUT,PATCH,POST,DELETE");
+    }
+
+    public static void enableCors(Map<String, Object> options) {
+        corsOptions = new CorsOptions(options);
+    }
+
+    private static String getAllowedOrigin(String origin) {
+        if (corsOptions.getOrigin() instanceof Boolean && (Boolean) corsOptions.getOrigin()) {
+            return "*";
+        } else if (corsOptions.getOrigin() instanceof String) {
+            return (String) corsOptions.getOrigin();
+        } else if (corsOptions.getOrigin() instanceof Pattern) {
+            if (((Pattern) corsOptions.getOrigin()).matcher(origin).matches()) {
+                return origin;
+            }
+        } else if (corsOptions.getOrigin() instanceof List) {
+            //noinspection unchecked
+            List<Object> origins = (List<Object>) corsOptions.getOrigin();
+            for (Object corsOrigin : origins) {
+                if (corsOrigin instanceof String && corsOrigin.equals(origin)) {
+                    return origin;
+                } else if (corsOrigin instanceof Pattern && ((Pattern) corsOrigin).matcher(origin).matches()) {
+                    return origin;
+                }
+            }
+        }
+        return "";
+    }
     private class AvnoiHandler implements com.sun.net.httpserver.HttpHandler {
         private final ObjectMapper objectMapper;
 
@@ -286,56 +334,93 @@ public class Avnoi {
 
         @Override
         public void handle(HttpExchange exchange) {
-            long startTime = System.currentTimeMillis();
-            String method = exchange.getRequestMethod();
-            String path = exchange.getRequestURI().getPath();
-
             try {
-                int statusCode = 200;
-                String responseBody = "";
+                long startTime = System.currentTimeMillis();
+                String method = exchange.getRequestMethod();
+                String path = exchange.getRequestURI().getPath();
 
-                RouteHandler routeHandler = router.findHandler(HttpMethod.valueOf(method), path);
-                if (routeHandler != null) {
-                    Method handler = routeHandler.getHandlerMethod();
-                    statusCode = routeHandler.getStatusCode();
+                Headers responseHeaders = exchange.getResponseHeaders();
+                String requestOrigin = exchange.getRequestHeaders().getFirst("Origin");
 
-                    Object result = dispatcher.dispatch(handler, exchange);
+                if (requestOrigin != null) {
+                    responseHeaders.set("Access-Control-Allow-Origin", getAllowedOrigin(requestOrigin));
 
-                    if (result instanceof CompletableFuture) {
-                        try {
-                            result = ((CompletableFuture<?>) result).get();
-                        } catch (InterruptedException | ExecutionException e) {
-                            handleException(exchange, e, method, path, startTime);
-                            return;
-                        }
+                    if (corsOptions.getCredentials() != null && corsOptions.getCredentials()) {
+                        responseHeaders.set("Access-Control-Allow-Credentials", "true");
                     }
-
-                    if (result instanceof String) {
-                        responseBody = (String) result;
-                    } else if (result instanceof Map && ((Map<?, ?>) result).containsKey("url") && handler.isAnnotationPresent(io.github._3xhaust.annotations.Redirect.class)) {
-                        statusCode = handler.getAnnotation(io.github._3xhaust.annotations.Redirect.class).statusCode();
-                        exchange.getResponseHeaders().add("Location", ((Map<?, ?>) result).get("url").toString());
-                    } else {
-                        responseBody = objectMapper.writeValueAsString(result);
+                    if (corsOptions.getAllowedHeaders() != null) {
+                        responseHeaders.set("Access-Control-Allow-Headers", String.join(",", corsOptions.getAllowedHeaders()));
                     }
-                } else {
-                    statusCode = 404;
-                    responseBody = "The requested page could not be found. Please check the URL and try again.";
+                    if (corsOptions.getExposedHeaders() != null) {
+                        responseHeaders.set("Access-Control-Expose-Headers", String.join(",", corsOptions.getExposedHeaders()));
+                    }
+                    if (corsOptions.getMethods() != null) {
+                        responseHeaders.set("Access-Control-Allow-Methods", String.join(",", corsOptions.getMethods()));
+                    }
+                    if (corsOptions.getMaxAge() != null && corsOptions.getMaxAge() > 0) {
+                        responseHeaders.set("Access-Control-Max-Age", corsOptions.getMaxAge().toString());
+                    }
                 }
 
-                sendResponse(exchange, statusCode, responseBody);
+                if ("OPTIONS".equals(method)) {
+                    responseHeaders.set("Allow", "GET,HEAD,PUT,PATCH,POST,DELETE");
 
-                long endTime = System.currentTimeMillis();
-                long processingTime = endTime - startTime;
-                String statusColor = statusCode < 300  ? ANSI_GREEN : statusCode < 400 ?  ANSI_YELLOW : ANSI_RED;
-                System.out.printf("[%s] %s %s %s%d%s in %dms\n",
-                        ANSI_CYAN + LocalDateTime.now().format(dateTimeFormatter) + ANSI_RESET,
-                        method,
-                        path,
-                        ANSI_BOLD + statusColor, statusCode, ANSI_RESET,
-                        processingTime);
+                    int optionsStatusCode = corsOptions.getOptionsSuccessStatus() != null
+                            ? corsOptions.getOptionsSuccessStatus()
+                            : 204;
+                    sendResponse(exchange, optionsStatusCode, "");
+                    return;
+                }
+
+                try {
+                    int statusCode = 200;
+                    String responseBody = "";
+
+                    RouteHandler routeHandler = router.findHandler(HttpMethod.valueOf(method), path);
+                    if (routeHandler != null) {
+                        Method handler = routeHandler.getHandlerMethod();
+                        statusCode = routeHandler.getStatusCode();
+
+                        Object result = dispatcher.dispatch(handler, exchange);
+
+                        if (result instanceof CompletableFuture) {
+                            try {
+                                result = ((CompletableFuture<?>) result).get();
+                            } catch (InterruptedException | ExecutionException e) {
+                                handleException(exchange, e, method, path, startTime);
+                                return;
+                            }
+                        }
+
+                        if (result instanceof String) {
+                            responseBody = (String) result;
+                        } else if (result instanceof Map && ((Map<?, ?>) result).containsKey("url") && handler.isAnnotationPresent(io.github._3xhaust.annotations.Redirect.class)) {
+                            statusCode = handler.getAnnotation(io.github._3xhaust.annotations.Redirect.class).statusCode();
+                            exchange.getResponseHeaders().add("Location", ((Map<?, ?>) result).get("url").toString());
+                        } else {
+                            responseBody = objectMapper.writeValueAsString(result);
+                        }
+                    } else {
+                        statusCode = 404;
+                        responseBody = "The requested page could not be found. Please check the URL and try again.";
+                    }
+
+                    sendResponse(exchange, statusCode, responseBody);
+
+                    long endTime = System.currentTimeMillis();
+                    long processingTime = endTime - startTime;
+                    String statusColor = statusCode < 300  ? ANSI_GREEN : statusCode < 400 ?  ANSI_YELLOW : ANSI_RED;
+                    System.out.printf("[%s] %s %s %s%d%s in %dms\n",
+                            ANSI_CYAN + LocalDateTime.now().format(dateTimeFormatter) + ANSI_RESET,
+                            method,
+                            path,
+                            ANSI_BOLD + statusColor, statusCode, ANSI_RESET,
+                            processingTime);
+                } catch (Exception e) {
+                    handleException(exchange, e, method, path, startTime);
+                }
             } catch (Exception e) {
-                handleException(exchange, e, method, path, startTime);
+                e.printStackTrace();
             }
         }
 
@@ -387,6 +472,124 @@ public class Avnoi {
             OutputStream os = exchange.getResponseBody();
             os.write(responseBody.getBytes());
             os.close();
+        }
+    }
+
+    @Getter
+    public static class CorsOptions {
+        private Object origin = false;
+        private String[] methods = null;
+        private String[] allowedHeaders = null;
+        private String[] exposedHeaders = null;
+        private Boolean credentials = null;
+        private Integer maxAge = null;
+        private Boolean preflightContinue = null;
+        private Integer optionsSuccessStatus = null;
+
+        public CorsOptions() {
+        }
+
+        public CorsOptions(Map<String, Object> options) {
+            if (options.containsKey("origin")) this.setOrigin(options.get("origin"));
+            if (options.containsKey("methods")) this.setMethods(options.get("methods"));
+            if (options.containsKey("allowedHeaders")) this.setAllowedHeaders(options.get("allowedHeaders"));
+            if (options.containsKey("exposedHeaders")) this.setExposedHeaders(options.get("exposedHeaders"));
+            if (options.containsKey("credentials")) this.setCredentials(options.get("credentials"));
+            if (options.containsKey("maxAge")) this.setMaxAge(options.get("maxAge"));
+            if (options.containsKey("preflightContinue"))
+                this.setPreflightContinue(options.get("preflightContinue"));
+            if (options.containsKey("optionsSuccessStatus"))
+                this.setOptionsSuccessStatus(options.get("optionsSuccessStatus"));
+        }
+
+        public void setOrigin(Object origin) {
+            if (origin instanceof Boolean) {
+                this.origin = origin;
+            } else if (origin instanceof String) {
+                this.origin = origin;
+            } else if (origin instanceof Pattern) {
+                this.origin = origin;
+            } else if (origin instanceof List<?> originList) {
+                List<Object> convertedOrigins = new ArrayList<>();
+                for (Object originItem : originList) {
+                    if (originItem instanceof String) {
+                        convertedOrigins.add(originItem);
+                    } else if (originItem instanceof Pattern) {
+                        convertedOrigins.add(originItem);
+                    } else {
+                        throw new IllegalArgumentException("Invalid origin type: " + originItem.getClass().getName());
+                    }
+                }
+                this.origin = convertedOrigins;
+            } else {
+                throw new IllegalArgumentException("Invalid origin type: " + origin.getClass().getName());
+            }
+        }
+
+        public void setMethods(Object methods) {
+            if (methods instanceof String) {
+                this.methods = ((String) methods).split(",");
+            } else if (methods instanceof String[]) {
+                this.methods = (String[]) methods;
+            } else {
+                throw new IllegalArgumentException("Invalid methods type: " + methods.getClass().getName());
+            }
+        }
+
+        public void setAllowedHeaders(Object allowedHeaders) {
+            if (allowedHeaders instanceof String) {
+                this.allowedHeaders = ((String) allowedHeaders).split(",");
+            } else if (allowedHeaders instanceof String[]) {
+                this.allowedHeaders = (String[]) allowedHeaders;
+            } else if (allowedHeaders instanceof List) {
+                this.allowedHeaders = ((List<?>) allowedHeaders).toArray(new String[0]);
+            } else {
+                throw new IllegalArgumentException("Invalid allowedHeaders type: " + allowedHeaders.getClass().getName());
+            }
+        }
+
+        public void setExposedHeaders(Object exposedHeaders) {
+            if (exposedHeaders instanceof String) {
+                this.exposedHeaders = ((String) exposedHeaders).split(",");
+            } else if (exposedHeaders instanceof String[]) {
+                this.exposedHeaders = (String[]) exposedHeaders;
+            } else if (exposedHeaders instanceof List){
+                this.exposedHeaders = ((List<?>) exposedHeaders).toArray(new String[0]);
+            } else {
+                throw new IllegalArgumentException("Invalid exposedHeaders type: " + exposedHeaders.getClass().getName());
+            }
+        }
+
+        public void setCredentials(Object credentials) {
+            if (credentials instanceof Boolean) {
+                this.credentials = (Boolean) credentials;
+            } else {
+                throw new IllegalArgumentException("Invalid credentials type: " + credentials.getClass().getName());
+            }
+        }
+
+        public void setMaxAge(Object maxAge) {
+            if (maxAge instanceof Integer) {
+                this.maxAge = (Integer) maxAge;
+            } else {
+                throw new IllegalArgumentException("Invalid maxAge type: " + maxAge.getClass().getName());
+            }
+        }
+
+        public void setPreflightContinue(Object preflightContinue) {
+            if (preflightContinue instanceof Boolean) {
+                this.preflightContinue = (Boolean) preflightContinue;
+            } else {
+                throw new IllegalArgumentException("Invalid preflightContinue type: " + preflightContinue.getClass().getName());
+            }
+        }
+
+        public void setOptionsSuccessStatus(Object optionsSuccessStatus) {
+            if (optionsSuccessStatus instanceof Integer) {
+                this.optionsSuccessStatus = (Integer) optionsSuccessStatus;
+            } else {
+                throw new IllegalArgumentException("Invalid optionsSuccessStatus type: " + optionsSuccessStatus.getClass().getName());
+            }
         }
     }
 }
