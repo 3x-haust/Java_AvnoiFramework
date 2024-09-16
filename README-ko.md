@@ -280,6 +280,71 @@ fun create(): String {
 ```
 </details>
 
+### 리다이렉션
+
+응답을 특정 URL으로 리다이렉트 하려면, `@Redirect()` 데코레이터를 사용하면 됩니다.
+
+`@Redirect()`는 `url`과 `statusCode` 두 선택 인수를 받습니다. 이때, `statusCode`의 기본 값은 `302`(`Found`)입니다.
+
+```java
+@Get()
+@Redirect(url = 'http://3xhaust.mcv.kr', statusCode = 301)
+```
+
+<details>
+<summary>코틀린</summary>
+    
+```kt
+@Get
+@Redirect(url = "http://3xhaust.mcv.kr", statusCode = 301)
+```
+</details>
+
+가끔, HTTP 상태 코드나 리다이렉트 URL을 동적으로 결정하고 싶을 때가 있을 겁니다. 그때는 아래의 형식을 가진 객체를 라우트 핸들러에서 반환하면 됩니다.
+
+```java
+Map.of(
+        "url", String,
+        "statusCode", int
+)
+```
+
+<details>
+<summary>코틀린</summary>
+
+```kt
+mapOf(
+    "url" to "/",
+    "statusCode" to 301
+)
+```
+</details>
+
+반환된 값은 `@Redirect()` 데코레이터의 인수를 덮어씌웁니다. 예를 들면 아래와 같습니다.
+
+```java
+@Get("docs")
+@Redirect(url="http://3xhaust", statusCode=302)
+public Object getDocs(@Query('version') String version) {
+  if (version == '5') {
+    return Map.of("url", "http://3xhaust/v5/");
+  }
+}
+```
+
+<details>
+<summary>코틀린</summary>
+
+```kt
+@Get("docs")
+@Redirect(url = "http://3xhaust", statusCode = 302)
+fun getDocs(@Query("version") version: String): Any {
+    if (version == "5") {
+        return mapOf("url" to "http://3xhaust/v5/")
+    }
+}
+```
+</details>
 
 
 ### 시작 및 실행
