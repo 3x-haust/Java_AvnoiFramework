@@ -1,4 +1,4 @@
-package io.github._3xhaust;
+package io.github._3xhaust.routing;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

@@ -1,4 +1,4 @@
-package io.github._3xhaust.annotations.orm;
+package io.github._3xhaust.orm.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

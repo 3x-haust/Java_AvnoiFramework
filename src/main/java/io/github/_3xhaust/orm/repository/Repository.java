@@ -1,4 +1,4 @@
-package io.github._3xhaust.orm;
+package io.github._3xhaust.orm.repository;
 
 import java.util.List;
 import java.util.Map;

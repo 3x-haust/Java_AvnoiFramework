@@ -1,7 +1,8 @@
-package io.github._3xhaust.orm;
+package io.github._3xhaust.orm.repository;
 
-import io.github._3xhaust.orm.driver.MysqlConnectionOptions;
-import io.github._3xhaust.orm.driver.SqliteConnectionOptions;
+import io.github._3xhaust.orm.DataSourceOptions;
+import io.github._3xhaust.orm.connections.MysqlConnectionOptions;
+import io.github._3xhaust.orm.connections.SqliteConnectionOptions;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -1,13 +1,13 @@
 package io.github._3xhaust.exmaple.orm.post;
 
-import io.github._3xhaust.HttpException;
-import io.github._3xhaust.HttpStatus;
+import io.github._3xhaust.exceptions.HttpException;
+import io.github._3xhaust.http.HttpStatus;
 import io.github._3xhaust.annotations.Inject;
 import io.github._3xhaust.annotations.Service;
 import io.github._3xhaust.exmaple.orm.post.dto.CreatePostDto;
 import io.github._3xhaust.exmaple.orm.post.entities.Post;
-import io.github._3xhaust.orm.Repository;
-import io.github._3xhaust.orm.RepositoryFactory;
+import io.github._3xhaust.orm.repository.Repository;
+import io.github._3xhaust.orm.repository.RepositoryFactory;
 
 import java.util.Date;
 import java.util.Map;

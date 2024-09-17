@@ -1,5 +1,6 @@
-package io.github._3xhaust;
+package io.github._3xhaust.exceptions;
 
+import io.github._3xhaust.http.HttpStatus;
 import lombok.Getter;
 import java.util.Map;
 

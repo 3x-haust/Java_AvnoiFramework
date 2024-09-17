@@ -1,9 +1,9 @@
-package io.github._3xhaust.orm;
+package io.github._3xhaust.orm.repository;
 
-import io.github._3xhaust.orm.driver.MysqlConnectionOptions;
-import io.github._3xhaust.orm.driver.SqliteConnectionOptions;
-import io.github._3xhaust.annotations.orm.Column;
-import io.github._3xhaust.annotations.orm.PrimaryGeneratedColumn;
+import io.github._3xhaust.orm.connections.MysqlConnectionOptions;
+import io.github._3xhaust.orm.connections.SqliteConnectionOptions;
+import io.github._3xhaust.orm.annotations.Column;
+import io.github._3xhaust.orm.annotations.PrimaryGeneratedColumn;
 
 import java.lang.reflect.Field;
 import java.sql.*;

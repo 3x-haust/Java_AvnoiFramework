@@ -1,8 +1,8 @@
 package io.github._3xhaust.exmaple.orm.post.entities;
 
 import io.github._3xhaust.annotations.Entity;
-import io.github._3xhaust.annotations.orm.Column;
-import io.github._3xhaust.annotations.orm.PrimaryGeneratedColumn;
+import io.github._3xhaust.orm.annotations.Column;
+import io.github._3xhaust.orm.annotations.PrimaryGeneratedColumn;
 import lombok.Getter;
 import lombok.Setter;
 

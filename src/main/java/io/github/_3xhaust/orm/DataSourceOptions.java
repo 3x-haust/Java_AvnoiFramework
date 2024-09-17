@@ -1,7 +1,7 @@
 package io.github._3xhaust.orm;
 
-import io.github._3xhaust.orm.driver.MysqlConnectionOptions;
-import io.github._3xhaust.orm.driver.SqliteConnectionOptions;
+import io.github._3xhaust.orm.connections.MysqlConnectionOptions;
+import io.github._3xhaust.orm.connections.SqliteConnectionOptions;
 import lombok.Getter;
 
 public class DataSourceOptions {

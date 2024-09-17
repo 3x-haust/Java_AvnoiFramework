@@ -1,4 +1,4 @@
-package io.github._3xhaust.orm.driver;
+package io.github._3xhaust.orm.connections;
 
 public class MysqlConnectionOptions {
     public String host = "localhost";

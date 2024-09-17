@@ -2,9 +2,10 @@ package io.github._3xhaust.exmaple.orm.post;
 
 import io.github._3xhaust.annotations.Controller;
 import io.github._3xhaust.annotations.Inject;
+import io.github._3xhaust.annotations.http.Post;
 import io.github._3xhaust.annotations.types.Body;
-import io.github._3xhaust.annotations.types.Get;
-import io.github._3xhaust.annotations.types.Param;
+import io.github._3xhaust.annotations.http.Get;
+import io.github._3xhaust.annotations.http.Param;
 import io.github._3xhaust.exmaple.orm.post.dto.CreatePostDto;
 
 import java.util.concurrent.CompletableFuture;
@@ -18,7 +19,7 @@ public class PostController {
         this.postService = postService;
     }
 
-    @io.github._3xhaust.annotations.types.Post("create")
+    @Post("create")
     public CompletableFuture<Object> create(@Body CreatePostDto post)  {
         long startTime = System.currentTimeMillis();
         CompletableFuture<Object> result = this.postService.create(post);

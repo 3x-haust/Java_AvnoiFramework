@@ -145,7 +145,7 @@ package <package>;
 
 import io.github._3xhaust.annotations.Controller;
 import io.github._3xhaust.annotations.Inject;
-import io.github._3xhaust.annotations.types.Get;
+import io.github._3xhaust.annotations.http.Get;
 
 @Controller("users")
 public class UsersController {
@@ -165,7 +165,7 @@ package <package>
 
 import io.github._3xhaust.annotations.Controller
 import io.github._3xhaust.annotations.Inject
-import io.github._3xhaust.annotations.types.Get
+import io.github._3xhaust.annotations.http.Get
 
 @Controller("users")
 class UsersController {
@@ -191,7 +191,7 @@ package <package>;
 
 import io.github._3xhaust.annotations.Controller;
 import io.github._3xhaust.annotations.Inject;
-import io.github._3xhaust.annotations.types.Get;
+import io.github._3xhaust.annotations.http.Get;
 
 @Controller("users")
 public class UsersController {
@@ -216,7 +216,7 @@ package <package>
 
 import io.github._3xhaust.annotations.Controller
 import io.github._3xhaust.annotations.Inject
-import io.github._3xhaust.annotations.types.Get
+import io.github._3xhaust.annotations.http.Get
 
 @Controller("users")
 class UsersController {

@@ -1,5 +1,6 @@
-package io.github._3xhaust;
+package io.github._3xhaust.routing;
 
+import io.github._3xhaust.http.HttpMethod;
 import lombok.Getter;
 import lombok.Setter;
 

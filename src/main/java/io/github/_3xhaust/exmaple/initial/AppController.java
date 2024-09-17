@@ -2,7 +2,7 @@ package io.github._3xhaust.exmaple.initial;
 
 import io.github._3xhaust.annotations.Controller;
 import io.github._3xhaust.annotations.Inject;
-import io.github._3xhaust.annotations.types.Get;
+import io.github._3xhaust.annotations.http.Get;
 
 @Controller
 public class AppController {

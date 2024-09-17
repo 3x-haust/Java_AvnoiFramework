@@ -1,4 +1,4 @@
-package io.github._3xhaust;
+package io.github._3xhaust.http;
 
 import lombok.Getter;
 

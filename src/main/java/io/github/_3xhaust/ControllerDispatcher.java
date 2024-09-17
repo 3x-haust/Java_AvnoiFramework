@@ -3,8 +3,10 @@ package io.github._3xhaust;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
 import io.github._3xhaust.annotations.Query;
+import io.github._3xhaust.annotations.http.Header;
 import io.github._3xhaust.annotations.types.Body;
-import io.github._3xhaust.annotations.types.Param;
+import io.github._3xhaust.annotations.http.Param;
+import io.github._3xhaust.http.ContentType;
 
 import java.io.*;
 import java.lang.reflect.Field;
@@ -30,8 +32,8 @@ public class ControllerDispatcher {
             throw new IllegalStateException("Controller instance not found in applicationContext: " + method.getDeclaringClass().getName());
         }
 
-        io.github._3xhaust.annotations.types.Header[] methodHeaders = method.getAnnotationsByType(io.github._3xhaust.annotations.types.Header.class);
-        for (io.github._3xhaust.annotations.types.Header methodHeader : methodHeaders) {
+        Header[] methodHeaders = method.getAnnotationsByType(Header.class);
+        for (Header methodHeader : methodHeaders) {
             exchange.getResponseHeaders().add(methodHeader.value(), methodHeader.defaultValue());
         }
 
